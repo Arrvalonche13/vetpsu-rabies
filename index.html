@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสำรวจการฉีดวัคซีน คณะสัตวแพทยศาสตร์ ม.อ.</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pastel: {
+                            pink: '#FFD1DC',
+                            blue: '#BCE6FF',
+                            green: '#C1E7E3',
+                            purple: '#E3D5CA',
+                            yellow: '#FFF5BA',
+                            bg: '#FAF8F5'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #FAF8F5; }
+        .glass-card { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.7); }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(8px); }
+    </style>
+</head>
+<body class="text-gray-700 min-h-screen pb-10">
+    <div id="app">
+        <!-- Navigation Header -->
+        <header class="bg-white/85 backdrop-blur-md sticky top-0 z-40 border-b border-pink-100 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-300 to-purple-300 flex items-center justify-center text-white shadow-sm font-bold text-lg">
+                        <i class="fa-solid fa-paw text-purple-700"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-gray-800 text-base md:text-lg leading-tight">ระบบสำรวจวัคซีนพิษสุนัขบ้า</h1>
+                        <p class="text-xs text-gray-500">คณะสัตวแพทยศาสตร์ ม.อ. (ปีสำรวจ {{ activeYear }})</p>
+                    </div>
+                </div>
+                
+                <!-- Login Status Controls -->
+                <div class="flex items-center gap-2">
+                    <!-- Loading Indicator -->
+                    <span v-if="isLoading" class="text-xs text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg animate-pulse font-medium">
+                        <i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังซิงค์ข้อมูล...
+                    </span>
+
+                    <!-- Student Logged In -->
+                    <div v-if="loggedInStudent && currentUserType === 'student'" class="flex items-center gap-2">
+                        <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-check"></i> {{ loggedInStudent.name }} (ปี {{ loggedInStudent.year }})
+                        </span>
+                        <button @click="logout" class="px-3 py-1.5 rounded-xl text-xs bg-rose-100 text-rose-600 hover:bg-rose-200 transition font-medium">
+                            <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
+                        </button>
+                    </div>
+
+                    <!-- Admin Logged In -->
+                    <div v-else-if="currentUserType === 'admin'" class="flex items-center gap-2">
+                        <span class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-xl font-medium">
+                            <i class="fa-solid fa-shield-halved mr-1"></i> {{ adminRole === 'full' ? 'Admin Full Access' : 'Admin Dashboard Only' }}
+                        </span>
+                        <button @click="logout" class="px-3 py-1.5 rounded-xl text-xs bg-rose-100 text-rose-600 hover:bg-rose-200 transition font-medium">
+                            <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
+                        </button>
+                    </div>
+
+                    <!-- Guest / Landing -->
+                    <div v-else class="flex gap-2">
+                        <button @click="openAdminModal" class="px-3 py-1.5 rounded-xl text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 transition font-medium">
+                            <i class="fa-solid fa-user-shield mr-1"></i> เข้าสู่ระบบ Admin
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Admin Navigation Bar -->
+            <div v-if="currentUserType === 'admin'" class="bg-purple-50/80 border-t border-purple-100 px-4 py-2">
+                <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm">
+                    <div class="flex gap-2">
+                        <button @click="adminView = 'dashboard'" :class="adminView === 'dashboard' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-chart-pie mr-1"></i> Dashboard สรุปข้อมูล
+                        </button>
+                        <button v-if="adminRole === 'full'" @click="adminView = 'control'" :class="adminView === 'control' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-sliders mr-1"></i> หน้า Control
+                        </button>
+                        <button v-if="adminRole === 'full'" @click="adminView = 'table'" :class="adminView === 'table' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-table-list mr-1"></i> แก้ไขข้อมูลรายบุคคล
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold text-purple-900"><i class="fa-solid fa-calendar-days"></i> ปีสำรวจ:</span>
+                        <select v-model="activeYear" class="px-2 py-1 bg-white border border-purple-200 rounded-lg text-xs font-bold text-purple-700">
+                            <option v-for="y in availableYears" :key="y" :value="y">พ.ศ. {{ y }}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="max-w-7xl mx-auto px-4 mt-6">
+
+            <!-- 1. LANDING PAGE / LOGIN -->
+            <div v-if="currentUserType === 'guest'" class="max-w-md mx-auto my-12">
+                <div class="glass-card p-6 md:p-8 rounded-3xl shadow-lg border border-purple-100 text-center space-y-6">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-purple-400 to-pink-400 text-white rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-md">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">PSU Passport Authentication</h2>
+                        <p class="text-xs text-gray-500 mt-1">เข้าสู่ระบบเพื่อตรวจสอบและกรอกข้อมูลวัคซีนส่วนบุคคล</p>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div class="space-y-3 text-left">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">PSU Passport / รหัสนักศึกษา</label>
+                            <input v-model="loginInput.username" @keyup.enter="loginStudent" type="text" placeholder="กรอกรหัสนักศึกษา 10 หลัก" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">รหัสผ่าน (Password)</label>
+                            <input v-model="loginInput.password" @keyup.enter="loginStudent" type="password" placeholder="••••••••" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 text-sm">
+                        </div>
+                        <p v-if="loginError" class="text-xs text-rose-500 font-medium"><i class="fa-solid fa-circle-exclamation"></i> {{ loginError }}</p>
+                        <button @click="loginStudent" class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold rounded-xl hover:opacity-95 transition shadow-md text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ (Log in)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. STUDENT PERSONAL SURVEY PORTAL -->
+            <div v-else-if="currentUserType === 'student' && loggedInStudent" class="space-y-6">
+                
+                <!-- Status Banner -->
+                <div v-if="!currentControl.isSurveyOpen" class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 flex items-center gap-3 text-sm shadow-sm">
+                    <i class="fa-solid fa-lock text-amber-500 text-xl"></i>
+                    <div>
+                        <span class="font-bold">ระบบปิดรับการสำรวจสำหรับปี {{ activeYear }}</span> — ท่านสามารถปรับปรุงข้อมูลส่วนตัวได้ แต่ไม่สามารถเลือกความประสงค์รับวัคซีนได้ในขณะนี้
+                    </div>
+                </div>
+
+                <!-- Form Card -->
+                <div class="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-pink-100 max-w-4xl mx-auto space-y-6">
+                    
+                    <!-- Profile Header -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-2xl font-bold text-gray-800">{{ loggedInStudent.name }}</h3>
+                                <span class="px-2.5 py-0.5 bg-purple-100 text-purple-700 font-semibold rounded-full text-xs">ชั้นปีที่ {{ loggedInStudent.year }}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-0.5">รหัสนักศึกษา: <span class="font-mono font-semibold text-gray-700">{{ loggedInStudent.id }}</span></p>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-100">
+                                <span class="text-xs font-semibold text-purple-800">ปีสำรวจ:</span>
+                                <select v-model="activeYear" class="bg-white border border-purple-200 rounded-lg text-xs font-bold px-2 py-1 text-purple-700">
+                                    <option v-for="y in availableYears" :key="y" :value="y">พ.ศ. {{ y }}</option>
+                                </select>
+                            </div>
+
+                            <button @click="isEditing = !isEditing" class="px-4 py-2 text-xs font-medium rounded-xl border transition flex items-center gap-2 shadow-sm" :class="isEditing ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
+                                <i :class="isEditing ? 'fa-solid fa-check' : 'fa-solid fa-pen-to-square'"></i> {{ isEditing ? 'บันทึกข้อมูล' : 'แก้ไขข้อมูลส่วนตัว' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 12 Form Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        
+                        <!-- 1. ชื่อ-สกุล -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">1. ชื่อ-นามสกุล</label>
+                            <input v-if="isEditing" v-model="loggedInStudent.name" @change="saveToStorage" type="text" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-medium">{{ loggedInStudent.name || '-' }}</div>
+                        </div>
+
+                        <!-- 2. รหัสนักศึกษา -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">2. รหัสนักศึกษา</label>
+                            <div class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono font-medium">{{ loggedInStudent.id }}</div>
+                        </div>
+
+                        <!-- 3. ชั้นปี -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">3. ชั้นปี</label>
+                            <select v-if="isEditing" v-model.number="loggedInStudent.year" @change="saveToStorage" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                                <option v-for="y in 6" :key="y" :value="y">ชั้นปีที่ {{ y }}</option>
+                            </select>
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">ชั้นปีที่ {{ loggedInStudent.year }}</div>
+                        </div>
+
+                        <!-- 4. ชื่อเล่น -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">4. ชื่อเล่น <span class="text-rose-500">*</span></label>
+                            <input v-if="isEditing" v-model="loggedInStudent.nickname" @change="saveToStorage" type="text" placeholder="ระบุชื่อเล่น" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.nickname || 'ยังไม่ได้ระบุ' }}</div>
+                        </div>
+
+                        <!-- 5. HN ม.อ. -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">5. เลข HN โรงพยาบาลสงขลานครินทร์ <span class="text-rose-500">*</span></label>
+                            <input v-if="isEditing" v-model="loggedInStudent.hn" @change="saveToStorage" type="text" placeholder="เช่น 153-91-76" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-mono">
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono">{{ loggedInStudent.hn || 'ยังไม่ได้ระบุ' }}</div>
+                        </div>
+
+                        <!-- 6. สิทธิ์การรักษา -->
+                        <div class="md:col-span-2 bg-purple-50/40 p-4 rounded-2xl border border-purple-100">
+                            <label class="block text-xs font-semibold text-purple-900 mb-2">6. สิทธิ์การรักษาทางสุขภาพที่ท่านมี <span class="text-rose-500">*</span></label>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-xl border border-purple-100">
+                                    <input type="radio" value="6.1 สวัสดิการข้าราชการ" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-purple-600">
+                                    <span class="text-xs font-medium">6.1 สวัสดิการข้าราชการ</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-xl border border-purple-100">
+                                    <input type="radio" value="6.2 สิทธิ์บัตรทอง" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-purple-600">
+                                    <span class="text-xs font-medium">6.2 สิทธิ์บัตรทอง</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-xl border border-purple-100">
+                                    <input type="radio" value="6.3 ประกันสุขภาพส่วนบุคคล" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-purple-600">
+                                    <span class="text-xs font-medium">6.3 ประกันสุขภาพส่วนบุคคล</span>
+                                </label>
+                            </div>
+                            <div v-if="loggedInStudent.privilege === '6.2 สิทธิ์บัตรทอง'" class="mt-3">
+                                <input v-if="isEditing" v-model="loggedInStudent.privilegeHospital" @change="saveToStorage" type="text" placeholder="โปรดระบุ โรงพยาบาลต้นสิทธิ์บัตรทอง" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                                <p v-else class="text-xs text-purple-700 mt-1 font-medium">โรงพยาบาลต้นสิทธิ์: {{ loggedInStudent.privilegeHospital || 'ยังไม่ได้ระบุ' }}</p>
+                            </div>
+                        </div>
+
+                        <!-- 7. รับวัคซีนล่าสุด -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">7. รับวัคซีนป้องกันโรคพิษสุนัขบ้าเข็มล่าสุดเมื่อวันที่ <span class="text-rose-500">*</span></label>
+                            <input v-if="isEditing" v-model="loggedInStudent.lastVaccineDate" @change="saveToStorage" type="text" placeholder="เช่น 9-เม.ย.-68 หรือ -" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.lastVaccineDate || 'ยังไม่ได้ระบุ' }}</div>
+                        </div>
+
+                        <!-- 8. รูปแบบวัคซีนเดิม -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">8. รูปแบบการรับวัคซีนเดิม <span class="text-rose-500">*</span></label>
+                            <select v-if="isEditing" v-model="loggedInStudent.vaccineType" @change="saveToStorage" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                                <option value="">-- โปรดเลือก --</option>
+                                <option value="สร้างภูมิ 3 เข็ม">สร้างภูมิ 3 เข็ม</option>
+                                <option value="กระตุ้นภูมิ 1 เข็ม">กระตุ้นภูมิ 1 เข็ม</option>
+                            </select>
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.vaccineType || 'ยังไม่ได้ระบุ' }}</div>
+                        </div>
+
+                        <!-- 9. แพ้อาหาร -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">9. อาการแพ้อาหาร</label>
+                            <input v-if="isEditing" v-model="loggedInStudent.foodAllergy" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ เช่น อาหารทะเล" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100" :class="loggedInStudent.foodAllergy && loggedInStudent.foodAllergy !== '-' ? 'text-amber-600 font-bold' : ''">
+                                {{ loggedInStudent.foodAllergy || 'ไม่มี' }}
+                            </div>
+                        </div>
+
+                        <!-- 10. แพ้ยา -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">10. อาการแพ้ยา</label>
+                            <input v-if="isEditing" v-model="loggedInStudent.drugAllergy" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ เช่น Cefalexin" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100" :class="loggedInStudent.drugAllergy && loggedInStudent.drugAllergy !== '-' ? 'text-rose-600 font-bold' : ''">
+                                {{ loggedInStudent.drugAllergy || 'ไม่มี' }}
+                            </div>
+                        </div>
+
+                        <!-- 11. โรคประจำตัว -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">11. โรคประจำตัว (ถ้ามี)</label>
+                            <input v-if="isEditing" v-model="loggedInStudent.chronicDisease" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.chronicDisease || 'ไม่มี' }}</div>
+                        </div>
+
+                        <!-- 12. เบอร์โทรศัพท์ -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">12. เบอร์โทรศัพท์ <span class="text-rose-500">*</span></label>
+                            <input v-if="isEditing" v-model="loggedInStudent.phone" @change="saveToStorage" type="text" placeholder="เช่น 0812345678" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-mono">
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono">{{ loggedInStudent.phone || 'ยังไม่ได้ระบุ' }}</div>
+                        </div>
+
+                    </div>
+
+                    <!-- Survey Decision Section -->
+                    <div class="mt-6 pt-6 border-t border-pink-100 bg-gradient-to-r from-pink-50/60 to-purple-50/60 p-6 rounded-2xl border shadow-sm">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-base flex items-center gap-2">
+                                    <i class="fa-solid fa-syringe text-pink-500"></i> ประสงค์ฉีดวัคซีนประจำปี {{ activeYear }}
+                                </h4>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <span v-if="!isFormComplete" class="text-rose-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i> กรุณากรอกข้อมูลส่วนตัวทั้ง 12 หัวข้อให้ครบถ้วนก่อนเลือกความประสงค์</span>
+                                    <span v-else-if="!currentControl.isSurveyOpen" class="text-amber-600 font-medium"><i class="fa-solid fa-lock"></i> ระบบสำรวจปิดอยู่โดยผู้ดูแลระบบ</span>
+                                    <span v-else class="text-emerald-600 font-medium"><i class="fa-solid fa-circle-check"></i> ข้อมูลครบถ้วนแล้ว สามารถเลือกความประสงค์ได้</span>
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <!-- Opt IN: 1 Dose -->
+                                <button @click="confirmVaccine(true, '1 เข็ม')" 
+                                        :disabled="!canChooseVaccine"
+                                        :class="currentStudentSurvey.vaccineChoice === true && currentStudentSurvey.doseType === '1 เข็ม' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50'"
+                                        class="px-4 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                    <i class="fa-solid fa-square-check"></i> ใช่ (กระตุ้น 1 เข็ม)
+                                </button>
+
+                                <!-- Opt IN: 3 Doses -->
+                                <button @click="confirmVaccine(true, '3 เข็ม')" 
+                                        :disabled="!canChooseVaccine"
+                                        :class="currentStudentSurvey.vaccineChoice === true && currentStudentSurvey.doseType === '3 เข็ม' ? 'bg-purple-600 text-white shadow-md' : 'bg-white text-purple-700 border border-purple-300 hover:bg-purple-50'"
+                                        class="px-4 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                    <i class="fa-solid fa-square-check"></i> ใช่ (สร้างภูมิ 3 เข็ม)
+                                </button>
+
+                                <!-- Opt OUT -->
+                                <button @click="confirmVaccine(false, '')" 
+                                        :disabled="!canChooseVaccine"
+                                        :class="currentStudentSurvey.vaccineChoice === false ? 'bg-rose-600 text-white shadow-md' : 'bg-white text-rose-700 border border-rose-300 hover:bg-rose-50'"
+                                        class="px-4 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                    <i class="fa-solid fa-rectangle-xmark"></i> ไม่ประสงค์ฉีด
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div v-if="currentStudentSurvey.vaccineChoice !== null" class="mt-4 pt-3 border-t border-purple-100 flex flex-col sm:flex-row justify-between items-center text-xs gap-2">
+                            <span class="font-bold" :class="currentStudentSurvey.vaccineChoice ? 'text-emerald-700' : 'text-rose-700'">
+                                สถานะปัจจุบัน: {{ currentStudentSurvey.vaccineChoice ? `✓ ประสงค์รับวัคซีนแบบ (${currentStudentSurvey.doseType})` : '✗ ไม่ประสงค์รับวัคซีน' }}
+                            </span>
+                            <span class="text-gray-500 font-mono text-xs">
+                                <i class="fa-regular fa-clock mr-1"></i> บันทึกเมื่อ: {{ currentStudentSurvey.timestamp || 'ยังไม่ได้บันทึก' }}
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 3. ADMIN PORTAL -->
+            <div v-else-if="currentUserType === 'admin'" class="space-y-6">
+
+                <!-- 3.1 DASHBOARD -->
+                <div v-if="adminView === 'dashboard'" class="space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Dashboard สรุปการฉีดวัคซีน (ปี {{ activeYear }})</h2>
+                            <p class="text-xs text-gray-500">สรุปภาพรวมรายชั้นปีของ คณะสัตวแพทยศาสตร์ ม.อ.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold">
+                                นักศึกษาทั้งหมด {{ overallDashboardStats.totalStudents }} คน
+                            </span>
+                            <span class="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-xl text-xs font-bold">
+                                วัคซีนต้องใช้รวม {{ overallDashboardStats.totalVaccines }} โดส
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="glass-card p-4 rounded-2xl border border-blue-100">
+                            <p class="text-xs font-semibold text-gray-500">จำนวนนักศึกษาทั้งหมด</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ overallDashboardStats.totalStudents }} <span class="text-xs font-normal">คน</span></h3>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl border border-emerald-100">
+                            <p class="text-xs font-semibold text-emerald-600">ประสงค์ฉีดวัคซีน</p>
+                            <h3 class="text-2xl font-bold text-emerald-700 mt-1">{{ overallDashboardStats.totalVaccineUsers }} <span class="text-xs font-normal">คน ({{ overallDashboardStats.percentVaccinated }}%)</span></h3>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl border border-purple-100">
+                            <p class="text-xs font-semibold text-purple-600">ฉีดกระตุ้น 1 เข็ม</p>
+                            <h3 class="text-2xl font-bold text-purple-700 mt-1">{{ overallDashboardStats.total1Dose }} <span class="text-xs font-normal">คน</span></h3>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl border border-pink-100">
+                            <p class="text-xs font-semibold text-pink-600">ฉีดสร้างภูมิ 3 เข็ม</p>
+                            <h3 class="text-2xl font-bold text-pink-700 mt-1">{{ overallDashboardStats.total3Dose }} <span class="text-xs font-normal">คน</span></h3>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                        <div class="p-4 border-b border-gray-100 font-bold text-gray-800 flex justify-between items-center">
+                            <span><i class="fa-solid fa-list-check text-purple-500 mr-2"></i> สรุปข้อมูลแยกตามชั้นปี (ไม่รวม Row ที่ถูกซ่อน)</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs md:text-sm">
+                                <thead class="bg-purple-50/70 text-purple-900 border-b border-purple-100 font-semibold">
+                                    <tr>
+                                        <th class="p-3.5">ชั้นปี</th>
+                                        <th class="p-3.5 text-center">นักศึกษาทั้งชั้นปี (คน)</th>
+                                        <th class="p-3.5 text-center">ประสงค์เข้าฉีด (คน)</th>
+                                        <th class="p-3.5 text-center">สัดส่วนฉีด (%)</th>
+                                        <th class="p-3.5 text-center">ฉีด 1 เข็ม (คน)</th>
+                                        <th class="p-3.5 text-center">ฉีด 3 เข็ม (คน)</th>
+                                        <th class="p-3.5 text-center bg-purple-100/70 font-bold">จำนวนวัคซีนที่ต้องใช้ (โดส)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="s in yearDashboardStats" :key="s.year" class="hover:bg-gray-50/80 transition">
+                                        <td class="p-3.5 font-bold text-gray-800">ชั้นปีที่ {{ s.year }}</td>
+                                        <td class="p-3.5 text-center font-mono font-medium">{{ s.totalStudents }}</td>
+                                        <td class="p-3.5 text-center font-mono font-bold text-emerald-600">{{ s.vaxCount }}</td>
+                                        <td class="p-3.5 text-center font-mono">
+                                            <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs">{{ s.percent }}%</span>
+                                        </td>
+                                        <td class="p-3.5 text-center font-mono text-purple-600 font-bold">{{ s.count1Dose }}</td>
+                                        <td class="p-3.5 text-center font-mono text-pink-600 font-bold">{{ s.count3Dose }}</td>
+                                        <td class="p-3.5 text-center font-mono font-bold text-purple-900 bg-purple-50/30">{{ s.vaccinesNeeded }}</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="bg-gray-100/80 font-bold border-t border-gray-200">
+                                    <tr>
+                                        <td class="p-3.5">รวมทั้งสิ้น</td>
+                                        <td class="p-3.5 text-center font-mono">{{ overallDashboardStats.totalStudents }}</td>
+                                        <td class="p-3.5 text-center font-mono text-emerald-700">{{ overallDashboardStats.totalVaccineUsers }}</td>
+                                        <td class="p-3.5 text-center font-mono text-emerald-700">{{ overallDashboardStats.percentVaccinated }}%</td>
+                                        <td class="p-3.5 text-center font-mono text-purple-700">{{ overallDashboardStats.total1Dose }}</td>
+                                        <td class="p-3.5 text-center font-mono text-pink-700">{{ overallDashboardStats.total3Dose }}</td>
+                                        <td class="p-3.5 text-center font-mono text-purple-900 bg-purple-200/60">{{ overallDashboardStats.totalVaccines }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.2 CONTROL PANEL -->
+                <div v-else-if="adminView === 'control' && adminRole === 'full'" class="space-y-6 max-w-2xl mx-auto">
+                    <div class="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-purple-100 space-y-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-purple-600"></i> หน้า Control เปิด-ปิดการสำรวจ
+                            </h2>
+                            <p class="text-xs text-gray-500">กำหนดปีการศึกษาและควบคุมการเปิดรับข้อมูลจากนักศึกษา</p>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-bold text-gray-700">เปิดสำรวจปีการศึกษาใหม่</label>
+                            <div class="flex gap-2">
+                                <input v-model="newYearInput" type="text" placeholder="ระบุ พ.ศ. เช่น 2569" class="flex-1 p-2.5 rounded-xl border border-gray-200 text-sm font-mono font-medium">
+                                <button @click="addSurveyYear" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition">
+                                    <i class="fa-solid fa-plus mr-1"></i> เพิ่มปีสำรวจ
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-2xl border flex items-center justify-between" :class="currentControl.isSurveyOpen ? 'bg-emerald-50/70 border-emerald-200' : 'bg-rose-50/70 border-rose-200'">
+                            <div>
+                                <h4 class="font-bold text-sm" :class="currentControl.isSurveyOpen ? 'text-emerald-800' : 'text-rose-800'">
+                                    สถานะการสำรวจปี {{ activeYear }}: {{ currentControl.isSurveyOpen ? 'เปิดรับข้อมูล' : 'ปิดรับข้อมูล' }}
+                                </h4>
+                                <p class="text-xs text-gray-500 mt-0.5">
+                                    {{ currentControl.isSurveyOpen ? 'นักศึกษาสามารถเลือกความประสงค์ได้' : 'ไม่อนุญาตให้นักศึกษาเปลี่ยนความประสงค์' }}
+                                </p>
+                            </div>
+                            <button @click="toggleSurveyOpenStatus" class="px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-sm" :class="currentControl.isSurveyOpen ? 'bg-rose-500 hover:bg-rose-600 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'">
+                                {{ currentControl.isSurveyOpen ? 'ปิดการสำรวจ' : 'เปิดการสำรวจ' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.3 ADMIN DATA TABLE VIEW -->
+                <div v-else-if="adminView === 'table' && adminRole === 'full'" class="space-y-4">
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">แก้ไขข้อมูลรายบุคคล (ปี {{ activeYear }})</h2>
+                            <p class="text-xs text-gray-500">คลิกแก้ไข Cell ได้โดยตรง ข้อมูลจะอัปเดตและบันทึกไปยัง Google Sheets อัตโนมัติ</p>
+                        </div>
+
+                        <!-- Add Row Button -->
+                        <div>
+                            <button @click="addNewRowAtEnd" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i> เพิ่มแถวใหม่ (ต่อท้าย)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="flex flex-wrap gap-2 text-xs bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                        <select v-model="filterYear" class="p-2 rounded-xl border border-gray-200">
+                            <option value="all">ทุกชั้นปี (1-6)</option>
+                            <option v-for="y in 6" :key="y" :value="y">ชั้นปีที่ {{ y }}</option>
+                        </select>
+
+                        <select v-model="filterChoice" class="p-2 rounded-xl border border-gray-200">
+                            <option value="all">ความประสงค์ทั้งหมด</option>
+                            <option value="yes">ประสงค์ฉีด (ใช่)</option>
+                            <option value="no">ไม่ประสงค์ฉีด (ไม่)</option>
+                            <option value="none">ยังไม่ระบุ</option>
+                        </select>
+
+                        <select v-model="filterHidden" class="p-2 rounded-xl border border-gray-200">
+                            <option value="all">สถานะ Row ทั้งหมด</option>
+                            <option value="visible">เฉพาะ Row ที่แสดงปกติ</option>
+                            <option value="hidden">เฉพาะ Row ที่ถูกซ่อน</option>
+                        </select>
+
+                        <input v-model="filterSearch" type="text" placeholder="ค้นหาชื่อ หรือ รหัส..." class="p-2 rounded-xl border border-gray-200 w-44">
+                    </div>
+
+                    <!-- Editable Data Table -->
+                    <div class="glass-card rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto max-h-[600px]">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-gray-100 text-gray-700 sticky top-0 z-10 font-semibold border-b">
+                                    <tr>
+                                        <th class="p-2.5 text-center">#</th>
+                                        <th class="p-2.5">รหัสนักศึกษา</th>
+                                        <th class="p-2.5">ชื่อ-นามสกุล</th>
+                                        <th class="p-2.5 text-center">ปี</th>
+                                        <th class="p-2.5">HN ม.อ.</th>
+                                        <th class="p-2.5">แพ้ยา</th>
+                                        <th class="p-2.5">แพ้อาหาร</th>
+                                        <th class="p-2.5">เบอร์โทร</th>
+                                        <th class="p-2.5 text-center">ความประสงค์</th>
+                                        <th class="p-2.5 text-center">จำนวนเข็ม</th>
+                                        <th class="p-2.5">Timestamp เวลากดยืนยัน</th>
+                                        <th class="p-2.5 text-center">สถานะ Row</th>
+                                        <th class="p-2.5 text-center">เครื่องมือ</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="(st, idx) in filteredStudents" :key="st.id + idx" :class="getSurveyData(st).hidden ? 'bg-gray-100/70 text-gray-400 opacity-60' : 'hover:bg-purple-50/40'">
+                                        <td class="p-2 text-center font-mono font-semibold">{{ idx + 1 }}</td>
+                                        <td class="p-2 font-mono font-bold">
+                                            <input v-model="st.id" @change="saveToStorage" type="text" class="w-24 bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-mono">
+                                        </td>
+                                        <td class="p-2">
+                                            <input v-model="st.name" @change="saveToStorage" type="text" class="w-full bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-medium">
+                                        </td>
+                                        <td class="p-2 text-center">
+                                            <input v-model.number="st.year" @change="saveToStorage" type="number" min="1" max="6" class="w-10 text-center bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-bold">
+                                        </td>
+                                        <td class="p-2">
+                                            <input v-model="st.hn" @change="saveToStorage" type="text" class="w-20 bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-mono">
+                                        </td>
+                                        <td class="p-2">
+                                            <input v-model="st.drugAllergy" @change="saveToStorage" type="text" class="w-20 bg-transparent p-1 border-b border-transparent focus:border-purple-400">
+                                        </td>
+                                        <td class="p-2">
+                                            <input v-model="st.foodAllergy" @change="saveToStorage" type="text" class="w-20 bg-transparent p-1 border-b border-transparent focus:border-purple-400">
+                                        </td>
+                                        <td class="p-2">
+                                            <input v-model="st.phone" @change="saveToStorage" type="text" class="w-24 bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-mono">
+                                        </td>
+
+                                        <td class="p-2 text-center">
+                                            <select v-model="getSurveyData(st).vaccineChoice" @change="updateTimestampOnAdminChange(st)" class="p-1 rounded font-bold text-xs" :class="getSurveyData(st).vaccineChoice === true ? 'bg-emerald-100 text-emerald-800' : getSurveyData(st).vaccineChoice === false ? 'bg-rose-100 text-rose-800' : 'bg-gray-100 text-gray-600'">
+                                                <option :value="null">ยังไม่ระบุ</option>
+                                                <option :value="true">ใช่ (ประสงค์)</option>
+                                                <option :value="false">ไม่ (ไม่ประสงค์)</option>
+                                            </select>
+                                        </td>
+
+                                        <td class="p-2 text-center">
+                                            <select v-model="getSurveyData(st).doseType" @change="saveToStorage" class="p-1 rounded border border-gray-200">
+                                                <option value="1 เข็ม">1 เข็ม</option>
+                                                <option value="3 เข็ม">3 เข็ม</option>
+                                            </select>
+                                        </td>
+
+                                        <td class="p-2 font-mono text-xs text-gray-600">
+                                            {{ getSurveyData(st).timestamp || '-' }}
+                                        </td>
+
+                                        <td class="p-2 text-center">
+                                            <span v-if="getSurveyData(st).hidden" class="px-2 py-0.5 bg-gray-300 text-gray-700 rounded-full font-bold text-[10px]">
+                                                <i class="fa-solid fa-eye-slash"></i> ซ่อนอยู่
+                                            </span>
+                                            <span v-else class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-bold text-[10px]">
+                                                <i class="fa-solid fa-eye"></i> ปกติ
+                                            </span>
+                                        </td>
+
+                                        <td class="p-2 text-center">
+                                            <div class="flex justify-center gap-1">
+                                                <button @click="toggleHideRow(st)" class="p-1.5 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 transition" :title="getSurveyData(st).hidden ? 'คลายซ่อน Row' : 'ซ่อน Row'">
+                                                    <i :class="getSurveyData(st).hidden ? 'fa-solid fa-eye text-emerald-600' : 'fa-solid fa-eye-slash text-amber-600'"></i>
+                                                </button>
+                                                <button @click="deleteRow(st)" class="p-1.5 rounded bg-rose-100 hover:bg-rose-200 text-rose-600 transition" title="ลบ Row">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- Admin Login Modal -->
+        <div v-if="showAdminModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-purple-100 space-y-4">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mx-auto text-xl mb-2">
+                        <i class="fa-solid fa-shield-cat"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">ผู้ดูแลระบบ (Admin Login)</h3>
+                    <p class="text-xs text-gray-500">กรอกรหัสผ่าน Admin เพื่อเข้าใช้งาน</p>
+                </div>
+
+                <div>
+                    <input v-model="adminPassword" type="password" placeholder="รหัสผ่าน Admin" @keyup.enter="loginAdmin" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 text-sm text-center font-mono font-bold">
+                    <p v-if="adminLoginError" class="text-xs text-rose-500 mt-2 text-center"><i class="fa-solid fa-triangle-exclamation"></i> {{ adminLoginError }}</p>
+                </div>
+
+                <div class="flex gap-2">
+                    <button @click="showAdminModal = false" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-semibold">ยกเลิก</button>
+                    <button @click="loginAdmin" class="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm">เข้าสู่ระบบ</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Vue Code -->
+    <script>
+        // Google Apps Script Web App URL
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySi80_dEss1wjH1p2E90UQhp8i7ufgTYhKaPCmwQaq40_VNQMR2GyNb3x_mKsk458e/exec';
+
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    isLoading: false,
+                    currentUserType: 'guest',
+                    loggedInStudent: null,
+                    adminRole: null,
+                    adminView: 'dashboard',
+
+                    loginInput: { username: '', password: '' },
+                    loginError: '',
+                    showAdminModal: false,
+                    adminPassword: '',
+                    adminLoginError: '',
+
+                    isEditing: false,
+
+                    activeYear: '2568',
+                    availableYears: ['2568', '2569'],
+                    newYearInput: '',
+                    controlsByYear: {
+                        '2568': { isSurveyOpen: true },
+                        '2569': { isSurveyOpen: true }
+                    },
+
+                    filterYear: 'all',
+                    filterChoice: 'all',
+                    filterHidden: 'all',
+                    filterSearch: '',
+
+                    students: []
+                }
+            },
+            computed: {
+                currentControl() {
+                    if (!this.controlsByYear[this.activeYear]) {
+                        this.controlsByYear[this.activeYear] = { isSurveyOpen: true };
+                    }
+                    return this.controlsByYear[this.activeYear];
+                },
+
+                currentStudentSurvey() {
+                    if (!this.loggedInStudent) return {};
+                    return this.getSurveyData(this.loggedInStudent);
+                },
+
+                isFormComplete() {
+                    if (!this.loggedInStudent) return false;
+                    const st = this.loggedInStudent;
+                    return !!(
+                        st.name &&
+                        st.id &&
+                        st.year &&
+                        st.nickname &&
+                        st.hn &&
+                        st.privilege &&
+                        (st.privilege !== '6.2 สิทธิ์บัตรทอง' || st.privilegeHospital) &&
+                        st.lastVaccineDate &&
+                        st.vaccineType &&
+                        st.phone
+                    );
+                },
+
+                canChooseVaccine() {
+                    return this.isFormComplete && this.currentControl.isSurveyOpen;
+                },
+
+                filteredStudents() {
+                    return this.students.filter(s => {
+                        const survey = this.getSurveyData(s);
+                        const matchYear = this.filterYear === 'all' || s.year === Number(this.filterYear);
+                        const matchChoice = this.filterChoice === 'all' 
+                            || (this.filterChoice === 'yes' && survey.vaccineChoice === true)
+                            || (this.filterChoice === 'no' && survey.vaccineChoice === false)
+                            || (this.filterChoice === 'none' && survey.vaccineChoice === null);
+                        const matchHidden = this.filterHidden === 'all'
+                            || (this.filterHidden === 'visible' && !survey.hidden)
+                            || (this.filterHidden === 'hidden' && survey.hidden);
+                        const matchSearch = !this.filterSearch || s.name.includes(this.filterSearch) || s.id.includes(this.filterSearch);
+                        
+                        return matchYear && matchChoice && matchHidden && matchSearch;
+                    });
+                },
+
+                yearDashboardStats() {
+                    return [1, 2, 3, 4, 5, 6].map(yr => {
+                        const yrStudents = this.students.filter(s => s.year === yr && !this.getSurveyData(s).hidden);
+                        const totalStudents = yrStudents.length;
+                        
+                        const vaxUsers = yrStudents.filter(s => this.getSurveyData(s).vaccineChoice === true);
+                        const vaxCount = vaxUsers.length;
+                        const percent = totalStudents > 0 ? ((vaxCount / totalStudents) * 100).toFixed(1) : 0;
+                        
+                        const count1Dose = vaxUsers.filter(s => this.getSurveyData(s).doseType === '1 เข็ม').length;
+                        const count3Dose = vaxUsers.filter(s => this.getSurveyData(s).doseType === '3 เข็ม').length;
+                        const vaccinesNeeded = (count1Dose * 1) + (count3Dose * 3);
+
+                        return {
+                            year: yr,
+                            totalStudents,
+                            vaxCount,
+                            percent,
+                            count1Dose,
+                            count3Dose,
+                            vaccinesNeeded
+                        };
+                    });
+                },
+
+                overallDashboardStats() {
+                    const stats = this.yearDashboardStats;
+                    const totalStudents = stats.reduce((acc, curr) => acc + curr.totalStudents, 0);
+                    const totalVaccineUsers = stats.reduce((acc, curr) => acc + curr.vaxCount, 0);
+                    const total1Dose = stats.reduce((acc, curr) => acc + curr.count1Dose, 0);
+                    const total3Dose = stats.reduce((acc, curr) => acc + curr.count3Dose, 0);
+                    const totalVaccines = stats.reduce((acc, curr) => acc + curr.vaccinesNeeded, 0);
+                    const percentVaccinated = totalStudents > 0 ? ((totalVaccineUsers / totalStudents) * 100).toFixed(1) : 0;
+
+                    return {
+                        totalStudents,
+                        totalVaccineUsers,
+                        total1Dose,
+                        total3Dose,
+                        totalVaccines,
+                        percentVaccinated
+                    };
+                }
+            },
+            methods: {
+                // ดึงข้อมูลล่าสุดจาก Google Sheets
+                async fetchFromGoogleSheet() {
+                    this.isLoading = true;
+                    try {
+                        const res = await fetch(GOOGLE_SCRIPT_URL);
+                        const json = await res.json();
+                        if (json.status === 'success' && json.data && json.data.length > 0) {
+                            this.students = json.data;
+                            this.saveToLocalStorageOnly();
+                        }
+                    } catch (err) {
+                        console.error('Error fetching data from Google Sheets:', err);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                // บันทึกข้อมูลไปยัง Google Sheets และ LocalStorage
+                async saveToStorage() {
+                    this.saveToLocalStorageOnly();
+
+                    try {
+                        await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ students: this.students })
+                        });
+                    } catch (err) {
+                        console.error('Error saving to Google Sheets:', err);
+                    }
+                },
+
+                saveToLocalStorageOnly() {
+                    try {
+                        localStorage.setItem('psu_vet_students_db', JSON.stringify(this.students));
+                        localStorage.setItem('psu_vet_controls_db', JSON.stringify(this.controlsByYear));
+                    } catch(e) {}
+                },
+
+                loadFromStorage() {
+                    try {
+                        const savedSt = localStorage.getItem('psu_vet_students_db');
+                        if (savedSt) this.students = JSON.parse(savedSt);
+
+                        const savedCtrl = localStorage.getItem('psu_vet_controls_db');
+                        if (savedCtrl) this.controlsByYear = JSON.parse(savedCtrl);
+                    } catch(e) {}
+                },
+
+                getSurveyData(student) {
+                    if (!student.surveyData) student.surveyData = {};
+                    if (!student.surveyData[this.activeYear]) {
+                        student.surveyData[this.activeYear] = {
+                            vaccineChoice: null,
+                            doseType: '1 เข็ม',
+                            timestamp: '',
+                            hidden: false
+                        };
+                    }
+                    return student.surveyData[this.activeYear];
+                },
+
+                loginStudent() {
+                    this.loginError = '';
+                    const username = this.loginInput.username.trim();
+                    if (!username) {
+                        this.loginError = 'กรุณากรอกรหัสนักศึกษา หรือ PSU Passport';
+                        return;
+                    }
+                    
+                    const found = this.students.find(s => String(s.id).trim() === username);
+                    if (found) {
+                        this.loggedInStudent = found;
+                        this.currentUserType = 'student';
+                        this.isEditing = false;
+                    } else {
+                        this.loginError = 'ไม่พบรหัสนักศึกษานี้ในฐานข้อมูลของคณะฯ';
+                    }
+                },
+
+                confirmVaccine(choice, dose) {
+                    if (!this.canChooseVaccine) return;
+                    const survey = this.getSurveyData(this.loggedInStudent);
+                    survey.vaccineChoice = choice;
+                    survey.doseType = choice ? dose : '';
+                    survey.timestamp = new Date().toLocaleString('th-TH');
+                    this.saveToStorage();
+                },
+
+                updateTimestampOnAdminChange(student) {
+                    const survey = this.getSurveyData(student);
+                    if (survey.vaccineChoice !== null) {
+                        survey.timestamp = new Date().toLocaleString('th-TH') + ' (โดย Admin)';
+                    }
+                    this.saveToStorage();
+                },
+
+                toggleHideRow(student) {
+                    const survey = this.getSurveyData(student);
+                    survey.hidden = !survey.hidden;
+                    this.saveToStorage();
+                },
+
+                deleteRow(student) {
+                    if (confirm(`ยืนยันการลบข้อมูลของ ${student.name} (${student.id}) ?`)) {
+                        const index = this.students.indexOf(student);
+                        if (index !== -1) {
+                            this.students.splice(index, 1);
+                            this.saveToStorage();
+                        }
+                    }
+                },
+
+                addNewRowAtEnd() {
+                    const newId = '69117' + Math.floor(10000 + Math.random() * 90000);
+                    const newStudent = {
+                        id: newId,
+                        name: 'นักศึกษาใหม่ (ระบุชื่อ)',
+                        nickname: '',
+                        year: 1,
+                        hn: '',
+                        privilege: '',
+                        privilegeHospital: '',
+                        lastVaccineDate: '',
+                        vaccineType: 'สร้างภูมิ 3 เข็ม',
+                        foodAllergy: '',
+                        drugAllergy: '',
+                        chronicDisease: '',
+                        phone: '',
+                        surveyData: {}
+                    };
+                    this.students.push(newStudent);
+                    this.saveToStorage();
+                },
+
+                addSurveyYear() {
+                    const yr = this.newYearInput.trim();
+                    if (yr && !this.availableYears.includes(yr)) {
+                        this.availableYears.push(yr);
+                        this.controlsByYear[yr] = { isSurveyOpen: true };
+                        this.activeYear = yr;
+                        this.newYearInput = '';
+                        this.saveToStorage();
+                    }
+                },
+
+                toggleSurveyOpenStatus() {
+                    this.currentControl.isSurveyOpen = !this.currentControl.isSurveyOpen;
+                    this.saveToStorage();
+                },
+
+                openAdminModal() {
+                    this.adminPassword = '';
+                    this.adminLoginError = '';
+                    this.showAdminModal = true;
+                },
+
+                loginAdmin() {
+                    if (this.adminPassword === '987654321') {
+                        this.currentUserType = 'admin';
+                        this.adminRole = 'full';
+                        this.showAdminModal = false;
+                        this.adminView = 'dashboard';
+                    } else if (this.adminPassword === '12345') {
+                        this.currentUserType = 'admin';
+                        this.adminRole = 'viewer';
+                        this.showAdminModal = false;
+                        this.adminView = 'dashboard';
+                    } else {
+                        this.adminLoginError = 'รหัสผ่านไม่ถูกต้อง';
+                    }
+                },
+
+                logout() {
+                    this.currentUserType = 'guest';
+                    this.loggedInStudent = null;
+                    this.adminRole = null;
+                    this.loginInput = { username: '', password: '' };
+                }
+            },
+            async mounted() {
+                this.loadFromStorage();
+                await this.fetchFromGoogleSheet();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
