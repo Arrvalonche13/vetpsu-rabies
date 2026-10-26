@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Google Identity Services (Sign in with Google) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts Prompt -->
@@ -62,8 +64,18 @@
                         <i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังซิงค์ข้อมูล...
                     </span>
 
+                    <!-- Check-in Mode Indicator -->
+                    <div v-if="currentUserType === 'checkin'" class="flex items-center gap-2">
+                        <span class="text-xs bg-amber-100 text-amber-800 px-3 py-1.5 rounded-xl font-bold">
+                            <i class="fa-solid fa-qrcode mr-1"></i> จุดเช็คอินรับวัคซีน
+                        </span>
+                        <button @click="exitCheckinMode" class="px-3 py-1.5 rounded-xl text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 transition font-medium">
+                            <i class="fa-solid fa-house mr-1"></i> กลับหน้าหลัก
+                        </button>
+                    </div>
+
                     <!-- Student Logged In -->
-                    <div v-if="loggedInStudent && currentUserType === 'student'" class="flex items-center gap-2">
+                    <div v-else-if="loggedInStudent && currentUserType === 'student'" class="flex items-center gap-2">
                         <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5">
                             <i class="fa-solid fa-user-check"></i> {{ loggedInStudent.name }} (ปี {{ loggedInStudent.year }})
                         </span>
@@ -104,6 +116,9 @@
                         <button v-if="adminRole === 'full'" @click="adminView = 'table'" :class="adminView === 'table' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
                             <i class="fa-solid fa-table-list mr-1"></i> แก้ไขข้อมูลรายบุคคล
                         </button>
+                        <button v-if="adminRole === 'full'" @click="adminView = 'qrcode'" :class="adminView === 'qrcode' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-qrcode mr-1"></i> QR Code เช็คอิน
+                        </button>
                     </div>
 
                     <div class="flex items-center gap-2">
@@ -119,30 +134,64 @@
         <!-- Main Content Area -->
         <main class="max-w-7xl mx-auto px-4 mt-6">
 
+            <!-- CHECK-IN KIOSK MODE -->
+            <div v-if="currentUserType === 'checkin'" class="max-w-lg mx-auto my-8">
+                <div class="glass-card p-6 md:p-8 rounded-3xl shadow-xl border border-amber-200 space-y-6 text-center">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-amber-400 to-orange-400 text-white rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-md">
+                        <i class="fa-solid fa-syringe"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">จุดเช็คอินรับวัคซีนอัตโนมัติ</h2>
+                        <p class="text-xs text-gray-500 mt-1">กรอกรหัสนักศึกษาเพื่อบันทึกวันรับวัคซีนล่าสุดเป็นวันนี้ ({{ getTodayThaiDate() }})</p>
+                    </div>
+
+                    <div class="space-y-3 text-left">
+                        <label class="block text-xs font-semibold text-gray-600">รหัสนักศึกษา (10 หลัก)</label>
+                        <div class="flex gap-2">
+                            <input v-model="checkinStudentId" @keyup.enter="processCheckin" type="text" placeholder="กรอกรหัสนักศึกษา..." class="flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-400 text-base font-mono font-bold">
+                            <button @click="processCheckin" class="px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:opacity-95 transition shadow-md text-sm">
+                                เช็คอิน
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="checkinMessage" class="p-4 rounded-2xl text-sm font-medium transition shadow-sm" :class="checkinSuccess ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
+                        <i :class="checkinSuccess ? 'fa-solid fa-circle-check text-emerald-600' : 'fa-solid fa-circle-xmark text-rose-600'" class="mr-1.5 text-base"></i>
+                        {{ checkinMessage }}
+                    </div>
+                </div>
+            </div>
+
             <!-- 1. LANDING PAGE / LOGIN -->
-            <div v-if="currentUserType === 'guest'" class="max-w-md mx-auto my-12">
+            <div v-else-if="currentUserType === 'guest'" class="max-w-md mx-auto my-12">
                 <div class="glass-card p-6 md:p-8 rounded-3xl shadow-lg border border-purple-100 text-center space-y-6">
                     <div class="w-16 h-16 bg-gradient-to-tr from-purple-400 to-pink-400 text-white rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-md">
                         <i class="fa-solid fa-graduation-cap"></i>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800">PSU Passport Authentication</h2>
-                        <p class="text-xs text-gray-500 mt-1">เข้าสู่ระบบเพื่อตรวจสอบและกรอกข้อมูลวัคซีนส่วนบุคคล</p>
+                        <h2 class="text-2xl font-bold text-gray-800">เข้าสู่ระบบนักศึกษา</h2>
+                        <p class="text-xs text-gray-500 mt-1">ใช้อีเมล ม.อ. (Google Workspace) เพื่อลงชื่อเข้าใช้งาน</p>
                     </div>
 
-                    <!-- Login Form -->
+                    <div class="space-y-4 py-2">
+                        <div id="googleBtnContainer" class="flex justify-center min-h-[44px]"></div>
+                        <p class="text-[11px] text-gray-400">รองรับบัญชี @g.psu.ac.th และ @psu.ac.th</p>
+                    </div>
+
+                    <div class="relative flex py-1 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-xs text-gray-400">หรือค้นหาด้วยรหัสนักศึกษา</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+
                     <div class="space-y-3 text-left">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">PSU Passport / รหัสนักศึกษา</label>
-                            <input v-model="loginInput.username" @keyup.enter="loginStudent" type="text" placeholder="กรอกรหัสนักศึกษา 10 หลัก" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">รหัสผ่าน (Password)</label>
-                            <input v-model="loginInput.password" @keyup.enter="loginStudent" type="password" placeholder="••••••••" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 text-sm">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">รหัสนักศึกษา (10 หลัก)</label>
+                            <input v-model="loginInput.username" @keyup.enter="loginStudent" type="text" placeholder="เช่น 6911710001" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 text-sm font-mono font-medium">
                         </div>
                         <p v-if="loginError" class="text-xs text-rose-500 font-medium"><i class="fa-solid fa-circle-exclamation"></i> {{ loginError }}</p>
-                        <button @click="loginStudent" class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold rounded-xl hover:opacity-95 transition shadow-md text-sm flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ (Log in)
+                        <button @click="loginStudent" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition text-xs flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-magnifying-glass"></i> ตรวจสอบข้อมูลรายบุคคล
                         </button>
                     </div>
                 </div>
@@ -150,8 +199,6 @@
 
             <!-- 2. STUDENT PERSONAL SURVEY PORTAL -->
             <div v-else-if="currentUserType === 'student' && loggedInStudent" class="space-y-6">
-                
-                <!-- Status Banner -->
                 <div v-if="!currentControl.isSurveyOpen" class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 flex items-center gap-3 text-sm shadow-sm">
                     <i class="fa-solid fa-lock text-amber-500 text-xl"></i>
                     <div>
@@ -159,10 +206,7 @@
                     </div>
                 </div>
 
-                <!-- Form Card -->
                 <div class="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-pink-100 max-w-4xl mx-auto space-y-6">
-                    
-                    <!-- Profile Header -->
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
                         <div>
                             <div class="flex items-center gap-2">
@@ -188,21 +232,17 @@
 
                     <!-- 12 Form Fields -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        
-                        <!-- 1. ชื่อ-สกุล -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">1. ชื่อ-นามสกุล</label>
                             <input v-if="isEditing" v-model="loggedInStudent.name" @change="saveToStorage" type="text" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
                             <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-medium">{{ loggedInStudent.name || '-' }}</div>
                         </div>
 
-                        <!-- 2. รหัสนักศึกษา -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">2. รหัสนักศึกษา</label>
                             <div class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono font-medium">{{ loggedInStudent.id }}</div>
                         </div>
 
-                        <!-- 3. ชั้นปี -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">3. ชั้นปี</label>
                             <select v-if="isEditing" v-model.number="loggedInStudent.year" @change="saveToStorage" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
@@ -211,21 +251,18 @@
                             <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">ชั้นปีที่ {{ loggedInStudent.year }}</div>
                         </div>
 
-                        <!-- 4. ชื่อเล่น -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">4. ชื่อเล่น <span class="text-rose-500">*</span></label>
                             <input v-if="isEditing" v-model="loggedInStudent.nickname" @change="saveToStorage" type="text" placeholder="ระบุชื่อเล่น" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
                             <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.nickname || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
 
-                        <!-- 5. HN ม.อ. -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">5. เลข HN โรงพยาบาลสงขลานครินทร์ <span class="text-rose-500">*</span></label>
                             <input v-if="isEditing" v-model="loggedInStudent.hn" @change="saveToStorage" type="text" placeholder="เช่น 153-91-76" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-mono">
                             <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono">{{ loggedInStudent.hn || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
 
-                        <!-- 6. สิทธิ์การรักษา -->
                         <div class="md:col-span-2 bg-purple-50/40 p-4 rounded-2xl border border-purple-100">
                             <label class="block text-xs font-semibold text-purple-900 mb-2">6. สิทธิ์การรักษาทางสุขภาพที่ท่านมี <span class="text-rose-500">*</span></label>
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -248,14 +285,12 @@
                             </div>
                         </div>
 
-                        <!-- 7. รับวัคซีนล่าสุด -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">7. รับวัคซีนป้องกันโรคพิษสุนัขบ้าเข็มล่าสุดเมื่อวันที่ <span class="text-rose-500">*</span></label>
                             <input v-if="isEditing" v-model="loggedInStudent.lastVaccineDate" @change="saveToStorage" type="text" placeholder="เช่น 9-เม.ย.-68 หรือ -" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.lastVaccineDate || 'ยังไม่ได้ระบุ' }}</div>
+                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-bold text-purple-700">{{ loggedInStudent.lastVaccineDate || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
 
-                        <!-- 8. รูปแบบวัคซีนเดิม -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">8. รูปแบบการรับวัคซีนเดิม <span class="text-rose-500">*</span></label>
                             <select v-if="isEditing" v-model="loggedInStudent.vaccineType" @change="saveToStorage" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
@@ -266,7 +301,6 @@
                             <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.vaccineType || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
 
-                        <!-- 9. แพ้อาหาร -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">9. อาการแพ้อาหาร</label>
                             <input v-if="isEditing" v-model="loggedInStudent.foodAllergy" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ เช่น อาหารทะเล" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
@@ -275,7 +309,6 @@
                             </div>
                         </div>
 
-                        <!-- 10. แพ้ยา -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">10. อาการแพ้ยา</label>
                             <input v-if="isEditing" v-model="loggedInStudent.drugAllergy" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ เช่น Cefalexin" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
@@ -284,20 +317,17 @@
                             </div>
                         </div>
 
-                        <!-- 11. โรคประจำตัว -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">11. โรคประจำตัว (ถ้ามี)</label>
                             <input v-if="isEditing" v-model="loggedInStudent.chronicDisease" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
                             <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.chronicDisease || 'ไม่มี' }}</div>
                         </div>
 
-                        <!-- 12. เบอร์โทรศัพท์ -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">12. เบอร์โทรศัพท์ <span class="text-rose-500">*</span></label>
                             <input v-if="isEditing" v-model="loggedInStudent.phone" @change="saveToStorage" type="text" placeholder="เช่น 0812345678" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-mono">
                             <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono">{{ loggedInStudent.phone || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
-
                     </div>
 
                     <!-- Survey Decision Section -->
@@ -315,7 +345,6 @@
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2">
-                                <!-- Opt IN: 1 Dose -->
                                 <button @click="confirmVaccine(true, '1 เข็ม')" 
                                         :disabled="!canChooseVaccine"
                                         :class="currentStudentSurvey.vaccineChoice === true && currentStudentSurvey.doseType === '1 เข็ม' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50'"
@@ -323,7 +352,6 @@
                                     <i class="fa-solid fa-square-check"></i> ใช่ (กระตุ้น 1 เข็ม)
                                 </button>
 
-                                <!-- Opt IN: 3 Doses -->
                                 <button @click="confirmVaccine(true, '3 เข็ม')" 
                                         :disabled="!canChooseVaccine"
                                         :class="currentStudentSurvey.vaccineChoice === true && currentStudentSurvey.doseType === '3 เข็ม' ? 'bg-purple-600 text-white shadow-md' : 'bg-white text-purple-700 border border-purple-300 hover:bg-purple-50'"
@@ -331,7 +359,6 @@
                                     <i class="fa-solid fa-square-check"></i> ใช่ (สร้างภูมิ 3 เข็ม)
                                 </button>
 
-                                <!-- Opt OUT -->
                                 <button @click="confirmVaccine(false, '')" 
                                         :disabled="!canChooseVaccine"
                                         :class="currentStudentSurvey.vaccineChoice === false ? 'bg-rose-600 text-white shadow-md' : 'bg-white text-rose-700 border border-rose-300 hover:bg-rose-50'"
@@ -350,7 +377,6 @@
                             </span>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -475,19 +501,17 @@
                     </div>
                 </div>
 
-                <!-- 3.3 ADMIN DATA TABLE VIEW -->
+                <!-- 3.3 ADMIN DATA TABLE VIEW (SUPPORT PASTE FROM EXCEL / GOOGLE SHEETS) -->
                 <div v-else-if="adminView === 'table' && adminRole === 'full'" class="space-y-4">
-                    
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <h2 class="text-xl font-bold text-gray-800">แก้ไขข้อมูลรายบุคคล (ปี {{ activeYear }})</h2>
-                            <p class="text-xs text-gray-500">คลิกแก้ไข Cell ได้โดยตรง ข้อมูลจะอัปเดตและบันทึกไปยัง Google Sheets อัตโนมัติ</p>
+                            <p class="text-xs text-gray-500"><i class="fa-solid fa-paste text-purple-500 mr-1"></i> รองรับการคัดลอกจาก Excel มาวาง (Ctrl+V) ได้ในครั้งเดียว</p>
                         </div>
 
-                        <!-- Add Row Button -->
                         <div>
                             <button @click="addNewRowAtEnd" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center gap-1.5">
-                                <i class="fa-solid fa-plus"></i> เพิ่มแถวใหม่ (ต่อท้าย)
+                                <i class="fa-solid fa-plus"></i> เพิ่มแถวใหม่ (แถวเปล่า)
                             </button>
                         </div>
                     </div>
@@ -515,7 +539,7 @@
                         <input v-model="filterSearch" type="text" placeholder="ค้นหาชื่อ หรือ รหัส..." class="p-2 rounded-xl border border-gray-200 w-44">
                     </div>
 
-                    <!-- Editable Data Table -->
+                    <!-- Editable Data Table with Excel Paste Handler -->
                     <div class="glass-card rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
                         <div class="overflow-x-auto max-h-[600px]">
                             <table class="w-full text-left text-xs">
@@ -526,39 +550,43 @@
                                         <th class="p-2.5">ชื่อ-นามสกุล</th>
                                         <th class="p-2.5 text-center">ปี</th>
                                         <th class="p-2.5">HN ม.อ.</th>
+                                        <th class="p-2.5">ฉีดล่าสุดวันที่</th>
                                         <th class="p-2.5">แพ้ยา</th>
                                         <th class="p-2.5">แพ้อาหาร</th>
                                         <th class="p-2.5">เบอร์โทร</th>
                                         <th class="p-2.5 text-center">ความประสงค์</th>
                                         <th class="p-2.5 text-center">จำนวนเข็ม</th>
-                                        <th class="p-2.5">Timestamp เวลากดยืนยัน</th>
-                                        <th class="p-2.5 text-center">สถานะ Row</th>
+                                        <th class="p-2.5">Timestamp ยืนยัน</th>
+                                        <th class="p-2.5 text-center">สถานะ</th>
                                         <th class="p-2.5 text-center">เครื่องมือ</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="(st, idx) in filteredStudents" :key="st.id + idx" :class="getSurveyData(st).hidden ? 'bg-gray-100/70 text-gray-400 opacity-60' : 'hover:bg-purple-50/40'">
+                                    <tr v-for="(st, idx) in filteredStudents" :key="st._uid" :class="getSurveyData(st).hidden ? 'bg-gray-100/70 text-gray-400 opacity-60' : 'hover:bg-purple-50/40'">
                                         <td class="p-2 text-center font-mono font-semibold">{{ idx + 1 }}</td>
                                         <td class="p-2 font-mono font-bold">
-                                            <input v-model="st.id" @change="saveToStorage" type="text" class="w-24 bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-mono">
+                                            <input v-model="st.id" @paste="handlePaste($event, idx, 'id')" @change="saveToStorage" type="text" placeholder="รหัส 10 หลัก" class="w-24 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-mono">
                                         </td>
                                         <td class="p-2">
-                                            <input v-model="st.name" @change="saveToStorage" type="text" class="w-full bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-medium">
+                                            <input v-model="st.name" @paste="handlePaste($event, idx, 'name')" @change="saveToStorage" type="text" placeholder="ชื่อ-นามสกุล" class="w-full bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-medium">
                                         </td>
                                         <td class="p-2 text-center">
-                                            <input v-model.number="st.year" @change="saveToStorage" type="number" min="1" max="6" class="w-10 text-center bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-bold">
+                                            <input v-model.number="st.year" @paste="handlePaste($event, idx, 'year')" @change="saveToStorage" type="number" min="1" max="6" class="w-10 text-center bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-bold">
                                         </td>
                                         <td class="p-2">
-                                            <input v-model="st.hn" @change="saveToStorage" type="text" class="w-20 bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-mono">
+                                            <input v-model="st.hn" @paste="handlePaste($event, idx, 'hn')" @change="saveToStorage" type="text" placeholder="HN" class="w-20 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-mono">
                                         </td>
                                         <td class="p-2">
-                                            <input v-model="st.drugAllergy" @change="saveToStorage" type="text" class="w-20 bg-transparent p-1 border-b border-transparent focus:border-purple-400">
+                                            <input v-model="st.lastVaccineDate" @paste="handlePaste($event, idx, 'lastVaccineDate')" @change="saveToStorage" type="text" placeholder="วันที่" class="w-20 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 text-xs">
                                         </td>
                                         <td class="p-2">
-                                            <input v-model="st.foodAllergy" @change="saveToStorage" type="text" class="w-20 bg-transparent p-1 border-b border-transparent focus:border-purple-400">
+                                            <input v-model="st.drugAllergy" @paste="handlePaste($event, idx, 'drugAllergy')" @change="saveToStorage" type="text" placeholder="แพ้ยา" class="w-20 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500">
                                         </td>
                                         <td class="p-2">
-                                            <input v-model="st.phone" @change="saveToStorage" type="text" class="w-24 bg-transparent p-1 border-b border-transparent focus:border-purple-400 font-mono">
+                                            <input v-model="st.foodAllergy" @paste="handlePaste($event, idx, 'foodAllergy')" @change="saveToStorage" type="text" placeholder="แพ้อาหาร" class="w-20 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500">
+                                        </td>
+                                        <td class="p-2">
+                                            <input v-model="st.phone" @paste="handlePaste($event, idx, 'phone')" @change="saveToStorage" type="text" placeholder="เบอร์โทร" class="w-24 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-mono">
                                         </td>
 
                                         <td class="p-2 text-center">
@@ -606,6 +634,33 @@
                     </div>
                 </div>
 
+                <!-- 3.4 QR CODE CHECK-IN GENERATOR FOR ADMIN -->
+                <div v-else-if="adminView === 'qrcode' && adminRole === 'full'" class="max-w-xl mx-auto space-y-6">
+                    <div class="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-purple-100 text-center space-y-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-qrcode text-purple-600"></i> QR Code จุดเช็คอินรับวัคซีน
+                            </h2>
+                            <p class="text-xs text-gray-500 mt-1">แสดง QR Code นี้บริเวณจุดบริการฉีดวัคซีน เพื่อให้นักศึกษาสแกนหรือแอดมินใช้เช็คอิน</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-inner inline-block mx-auto">
+                            <img :src="qrCodeApiUrl" alt="Check-in QR Code" class="w-60 h-60 mx-auto rounded-lg">
+                        </div>
+
+                        <div class="space-y-3">
+                            <p class="text-xs text-gray-600 font-mono bg-purple-50 p-3 rounded-xl border border-purple-100 break-all">
+                                {{ checkinPageUrl }}
+                            </p>
+                            <div class="flex justify-center gap-2">
+                                <button @click="openCheckinKioskDirectly" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl text-xs shadow-md hover:opacity-95 transition">
+                                    <i class="fa-solid fa-up-right-from-square mr-1"></i> เปิดหน้าจอจุดเช็คอิน
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </main>
@@ -637,8 +692,8 @@
 
     <!-- Application Vue Code -->
     <script>
-        // Google Apps Script Web App URL
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySi80_dEss1wjH1p2E90UQhp8i7ufgTYhKaPCmwQaq40_VNQMR2GyNb3x_mKsk458e/exec';
+        const GOOGLE_CLIENT_ID = '521602206782-3qdkohme9nb00be4p0ou0t0c5g15hloe.apps.googleusercontent.com';
 
         const { createApp } = Vue;
 
@@ -672,10 +727,23 @@
                     filterHidden: 'all',
                     filterSearch: '',
 
+                    checkinStudentId: '',
+                    checkinMessage: '',
+                    checkinSuccess: false,
+
                     students: []
                 }
             },
             computed: {
+                checkinPageUrl() {
+                    const baseUrl = window.location.origin + window.location.pathname;
+                    return baseUrl + '?mode=checkin';
+                },
+
+                qrCodeApiUrl() {
+                    return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(this.checkinPageUrl)}`;
+                },
+
                 currentControl() {
                     if (!this.controlsByYear[this.activeYear]) {
                         this.controlsByYear[this.activeYear] = { isSurveyOpen: true };
@@ -720,7 +788,7 @@
                         const matchHidden = this.filterHidden === 'all'
                             || (this.filterHidden === 'visible' && !survey.hidden)
                             || (this.filterHidden === 'hidden' && survey.hidden);
-                        const matchSearch = !this.filterSearch || s.name.includes(this.filterSearch) || s.id.includes(this.filterSearch);
+                        const matchSearch = !this.filterSearch || s.name.includes(this.filterSearch) || String(s.id).includes(this.filterSearch);
                         
                         return matchYear && matchChoice && matchHidden && matchSearch;
                     });
@@ -771,14 +839,127 @@
                 }
             },
             methods: {
-                // ดึงข้อมูลล่าสุดจาก Google Sheets
+                getTodayThaiDate() {
+                    const d = new Date();
+                    const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                    const day = d.getDate();
+                    const month = thaiMonths[d.getMonth()];
+                    const year = (d.getFullYear() + 543).toString().slice(-2);
+                    return `${day}-${month}-${year}`;
+                },
+
+                ensureUniqueKeys(list) {
+                    return list.map(s => {
+                        if (!s._uid) {
+                            s._uid = 'st_' + Math.random().toString(36).substr(2, 9) + Date.now();
+                        }
+                        return s;
+                    });
+                },
+
+                // Handle Bulk Paste from Excel / Google Sheets
+                handlePaste(e, startRowIdx, startColKey) {
+                    const clipboardData = e.clipboardData || window.clipboardData;
+                    const pastedText = clipboardData.getData('text');
+                    
+                    // If simple single-cell text without tab/newline, handle standard paste
+                    if (!pastedText || (!pastedText.includes('\t') && !pastedText.includes('\n'))) {
+                        return;
+                    }
+
+                    e.preventDefault();
+
+                    const rows = pastedText.split(/\r?\n/).filter(r => r.trim() !== '');
+                    const colKeys = ['id', 'name', 'year', 'hn', 'lastVaccineDate', 'drugAllergy', 'foodAllergy', 'phone'];
+                    const startColIdx = colKeys.indexOf(startColKey);
+
+                    if (startColIdx === -1) return;
+
+                    rows.forEach((rowText, rOffset) => {
+                        const targetRowIdx = startRowIdx + rOffset;
+                        
+                        // Auto append blank row if pasted rows exceed current list length
+                        while (targetRowIdx >= this.filteredStudents.length) {
+                            this.addNewRowAtEnd();
+                        }
+
+                        const student = this.filteredStudents[targetRowIdx];
+                        if (!student) return;
+
+                        const cells = rowText.split('\t');
+                        cells.forEach((cellVal, cOffset) => {
+                            const targetColIdx = startColIdx + cOffset;
+                            if (targetColIdx < colKeys.length) {
+                                const key = colKeys[targetColIdx];
+                                const val = cellVal.trim();
+                                if (key === 'year') {
+                                    student[key] = parseInt(val) || 1;
+                                } else {
+                                    student[key] = val;
+                                }
+                            }
+                        });
+                    });
+
+                    this.saveToStorage();
+                },
+
+                initGoogleSignIn() {
+                    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                        google.accounts.id.initialize({
+                            client_id: GOOGLE_CLIENT_ID,
+                            callback: this.handleGoogleCredentialResponse
+                        });
+                        const btnContainer = document.getElementById("googleBtnContainer");
+                        if (btnContainer) {
+                            google.accounts.id.renderButton(
+                                btnContainer,
+                                { theme: "outline", size: "large", text: "signin_with", shape: "pill", width: 280 }
+                            );
+                        }
+                    } else {
+                        setTimeout(() => this.initGoogleSignIn(), 500);
+                    }
+                },
+
+                handleGoogleCredentialResponse(response) {
+                    try {
+                        const base64Url = response.credential.split('.')[1];
+                        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                        }).join(''));
+
+                        const profile = JSON.parse(jsonPayload);
+                        const email = profile.email || '';
+
+                        const matched = email.match(/\d{10}/);
+                        let studentId = matched ? matched[0] : '';
+
+                        if (!studentId && email.includes('@')) {
+                            studentId = email.split('@')[0];
+                        }
+
+                        const found = this.students.find(s => String(s.id).trim() === studentId);
+                        if (found) {
+                            this.loggedInStudent = found;
+                            this.currentUserType = 'student';
+                            this.loginError = '';
+                        } else {
+                            this.loginError = `เข้าสู่ระบบ Google สำเร็จ (${email}) แต่ไม่พบรหัสนักศึกษา "${studentId || 'นี้'}" ในฐานข้อมูลของคณะฯ`;
+                        }
+                    } catch (e) {
+                        this.loginError = 'เกิดข้อผิดพลาดในการยืนยันตัวตนด้วย Google';
+                    }
+                },
+
                 async fetchFromGoogleSheet() {
                     this.isLoading = true;
                     try {
                         const res = await fetch(GOOGLE_SCRIPT_URL);
                         const json = await res.json();
                         if (json.status === 'success' && json.data && json.data.length > 0) {
-                            this.students = json.data;
+                            this.students = this.ensureUniqueKeys(json.data);
                             this.saveToLocalStorageOnly();
                         }
                     } catch (err) {
@@ -788,7 +969,6 @@
                     }
                 },
 
-                // บันทึกข้อมูลไปยัง Google Sheets และ LocalStorage
                 async saveToStorage() {
                     this.saveToLocalStorageOnly();
 
@@ -814,7 +994,9 @@
                 loadFromStorage() {
                     try {
                         const savedSt = localStorage.getItem('psu_vet_students_db');
-                        if (savedSt) this.students = JSON.parse(savedSt);
+                        if (savedSt) {
+                            this.students = this.ensureUniqueKeys(JSON.parse(savedSt));
+                        }
 
                         const savedCtrl = localStorage.getItem('psu_vet_controls_db');
                         if (savedCtrl) this.controlsByYear = JSON.parse(savedCtrl);
@@ -834,11 +1016,46 @@
                     return student.surveyData[this.activeYear];
                 },
 
+                processCheckin() {
+                    this.checkinMessage = '';
+                    const sid = this.checkinStudentId.trim();
+                    if (!sid) {
+                        this.checkinSuccess = false;
+                        this.checkinMessage = 'กรุณากรอกรหัสนักศึกษา';
+                        return;
+                    }
+
+                    const student = this.students.find(s => String(s.id).trim() === sid);
+                    if (student) {
+                        const todayDate = this.getTodayThaiDate();
+                        student.lastVaccineDate = todayDate;
+                        this.saveToStorage();
+
+                        this.checkinSuccess = true;
+                        this.checkinMessage = `เช็คอินสำเร็จ! คุณ${student.name} ได้รับการอัปเดตวันฉีดวัคซีนล่าสุดเป็นวันที่ ${todayDate} เรียบร้อยแล้ว`;
+                        this.checkinStudentId = '';
+                    } else {
+                        this.checkinSuccess = false;
+                        this.checkinMessage = `ไม่พบรหัสนักศึกษา "${sid}" ในฐานข้อมูล`;
+                    }
+                },
+
+                openCheckinKioskDirectly() {
+                    this.currentUserType = 'checkin';
+                    this.checkinStudentId = '';
+                    this.checkinMessage = '';
+                },
+
+                exitCheckinMode() {
+                    this.currentUserType = 'admin';
+                    this.adminView = 'qrcode';
+                },
+
                 loginStudent() {
                     this.loginError = '';
                     const username = this.loginInput.username.trim();
                     if (!username) {
-                        this.loginError = 'กรุณากรอกรหัสนักศึกษา หรือ PSU Passport';
+                        this.loginError = 'กรุณากรอกรหัสนักศึกษา';
                         return;
                     }
                     
@@ -886,17 +1103,17 @@
                 },
 
                 addNewRowAtEnd() {
-                    const newId = '69117' + Math.floor(10000 + Math.random() * 90000);
                     const newStudent = {
-                        id: newId,
-                        name: 'นักศึกษาใหม่ (ระบุชื่อ)',
+                        _uid: 'st_' + Math.random().toString(36).substr(2, 9) + Date.now(),
+                        id: '',
+                        name: '',
                         nickname: '',
                         year: 1,
                         hn: '',
                         privilege: '',
                         privilegeHospital: '',
                         lastVaccineDate: '',
-                        vaccineType: 'สร้างภูมิ 3 เข็ม',
+                        vaccineType: 'กระตุ้นภูมิ 1 เข็ม',
                         foodAllergy: '',
                         drugAllergy: '',
                         chronicDisease: '',
@@ -950,11 +1167,24 @@
                     this.loggedInStudent = null;
                     this.adminRole = null;
                     this.loginInput = { username: '', password: '' };
+                    this.$nextTick(() => {
+                        this.initGoogleSignIn();
+                    });
                 }
             },
             async mounted() {
                 this.loadFromStorage();
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('mode') === 'checkin') {
+                    this.currentUserType = 'checkin';
+                }
+
                 await this.fetchFromGoogleSheet();
+
+                this.$nextTick(() => {
+                    this.initGoogleSignIn();
+                });
             }
         }).mount('#app');
     </script>
