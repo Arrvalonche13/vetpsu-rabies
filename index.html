@@ -19,13 +19,14 @@
             theme: {
                 extend: {
                     colors: {
-                        pastel: {
-                            pink: '#FFD1DC',
-                            blue: '#BCE6FF',
-                            green: '#C1E7E3',
-                            purple: '#E3D5CA',
-                            yellow: '#FFF5BA',
-                            bg: '#FAF8F5'
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
                         }
                     },
                     fontFamily: {
@@ -36,94 +37,118 @@
         }
     </script>
     <style>
-        body { font-family: 'Prompt', sans-serif; background-color: #FAF8F5; }
-        .glass-card { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.7); }
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(8px); }
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            background: radial-gradient(circle at top right, rgba(237, 233, 254, 0.5), rgba(253, 242, 248, 0.3), rgba(248, 250, 252, 1));
+            background-attachment: fixed;
+        }
+        .modern-glass { 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(16px); 
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 10px 30px -5px rgba(124, 58, 237, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+        }
+        .modern-glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(241, 245, 249, 1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+        }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="text-gray-700 min-h-screen pb-10">
+<body class="text-slate-700 min-h-screen pb-12 antialiased selection:bg-brand-500 selection:text-white">
     <div id="app">
         <!-- Navigation Header -->
-        <header class="bg-white/85 backdrop-blur-md sticky top-0 z-40 border-b border-pink-100 shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-300 to-purple-300 flex items-center justify-center text-white shadow-sm font-bold text-lg">
-                        <i class="fa-solid fa-paw text-purple-700"></i>
+        <header class="modern-glass sticky top-0 z-40 border-b border-slate-200/60 shadow-xs">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 via-purple-600 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/25 ring-4 ring-white">
+                        <i class="fa-solid fa-paw text-xl"></i>
                     </div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-base md:text-lg leading-tight">ระบบสำรวจวัคซีนพิษสุนัขบ้า</h1>
-                        <p class="text-xs text-gray-500">คณะสัตวแพทยศาสตร์ ม.อ. (ปีสำรวจ {{ activeYear }})</p>
+                        <div class="flex items-center gap-2">
+                            <h1 class="font-bold text-slate-900 text-base md:text-lg leading-tight tracking-tight">ระบบสำรวจวัคซีนพิษสุนัขบ้า</h1>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 text-brand-700 border border-brand-200">v2.0</span>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium">คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์</p>
                     </div>
                 </div>
                 
-                <!-- Login Status Controls -->
-                <div class="flex items-center gap-2">
-                    <!-- Loading Indicator -->
-                    <span v-if="isLoading" class="text-xs text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg animate-pulse font-medium">
-                        <i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังซิงค์ข้อมูล...
+                <!-- Status & Navigation Controls -->
+                <div class="flex items-center gap-3">
+                    <!-- Sync Spinner -->
+                    <span v-if="isLoading" class="text-xs text-brand-700 bg-brand-50/80 border border-brand-100 px-3 py-1.5 rounded-xl animate-pulse font-medium flex items-center gap-2">
+                        <i class="fa-solid fa-spinner fa-spin text-brand-600"></i>
+                        <span>กำลังซิงค์...</span>
                     </span>
 
-                    <!-- Check-in Mode Indicator -->
+                    <!-- Check-in Kiosk Indicator -->
                     <div v-if="currentUserType === 'checkin'" class="flex items-center gap-2">
-                        <span class="text-xs bg-amber-100 text-amber-800 px-3 py-1.5 rounded-xl font-bold">
-                            <i class="fa-solid fa-qrcode mr-1"></i> จุดเช็คอินรับวัคซีน
+                        <span class="text-xs bg-amber-500 text-white px-3.5 py-1.5 rounded-xl font-bold shadow-sm flex items-center gap-1.5">
+                            <i class="fa-solid fa-qrcode"></i> จุดเช็คอินรับวัคซีน
                         </span>
-                        <button @click="exitCheckinMode" class="px-3 py-1.5 rounded-xl text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 transition font-medium">
-                            <i class="fa-solid fa-house mr-1"></i> กลับหน้าหลัก
+                        <button @click="exitCheckinMode" class="px-3 py-1.5 rounded-xl text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 transition font-semibold">
+                            กลับหน้าหลัก
                         </button>
                     </div>
 
-                    <!-- Student Logged In -->
+                    <!-- Student Profile Badge -->
                     <div v-else-if="loggedInStudent && currentUserType === 'student'" class="flex items-center gap-2">
-                        <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5">
-                            <i class="fa-solid fa-user-check"></i> {{ loggedInStudent.name }} (ปี {{ loggedInStudent.year }})
-                        </span>
-                        <button @click="logout" class="px-3 py-1.5 rounded-xl text-xs bg-rose-100 text-rose-600 hover:bg-rose-200 transition font-medium">
+                        <div class="bg-slate-100/80 border border-slate-200/80 px-3 py-1.5 rounded-2xl flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold">
+                                {{ loggedInStudent.name ? loggedInStudent.name.charAt(0) : 'S' }}
+                            </div>
+                            <span class="text-xs text-slate-800 font-semibold">{{ loggedInStudent.name }} (ปี {{ loggedInStudent.year }})</span>
+                        </div>
+                        <button @click="logout" class="px-3 py-1.5 rounded-2xl text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 transition font-semibold">
                             <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
                         </button>
                     </div>
 
-                    <!-- Admin Logged In -->
+                    <!-- Admin Profile Badge -->
                     <div v-else-if="currentUserType === 'admin'" class="flex items-center gap-2">
-                        <span class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-xl font-medium">
-                            <i class="fa-solid fa-shield-halved mr-1"></i> {{ adminRole === 'full' ? 'Admin Full Access' : 'Admin Dashboard Only' }}
+                        <span class="text-xs bg-emerald-500 text-white px-3.5 py-1.5 rounded-2xl font-bold shadow-sm flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved"></i> {{ adminRole === 'full' ? 'Admin Full Access' : 'Admin Viewer' }}
                         </span>
-                        <button @click="logout" class="px-3 py-1.5 rounded-xl text-xs bg-rose-100 text-rose-600 hover:bg-rose-200 transition font-medium">
+                        <button @click="logout" class="px-3 py-1.5 rounded-2xl text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 transition font-semibold">
                             <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
                         </button>
                     </div>
 
-                    <!-- Guest / Landing -->
+                    <!-- Admin Guest Button -->
                     <div v-else class="flex gap-2">
-                        <button @click="openAdminModal" class="px-3 py-1.5 rounded-xl text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 transition font-medium">
-                            <i class="fa-solid fa-user-shield mr-1"></i> เข้าสู่ระบบ Admin
+                        <button @click="openAdminModal" class="px-3.5 py-2 rounded-2xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:border-brand-300 hover:text-brand-600 hover:shadow-sm transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-shield text-brand-500"></i> เข้าสู่ระบบ Admin
                         </button>
                     </div>
                 </div>
             </div>
             
-            <!-- Admin Navigation Bar -->
-            <div v-if="currentUserType === 'admin'" class="bg-purple-50/80 border-t border-purple-100 px-4 py-2">
-                <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm">
-                    <div class="flex gap-2">
-                        <button @click="adminView = 'dashboard'" :class="adminView === 'dashboard' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
-                            <i class="fa-solid fa-chart-pie mr-1"></i> Dashboard สรุปข้อมูล
+            <!-- Admin View Tabs Sub-header -->
+            <div v-if="currentUserType === 'admin'" class="bg-slate-900 text-white px-4 py-2 border-t border-slate-800">
+                <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex gap-1.5">
+                        <button @click="adminView = 'dashboard'" :class="adminView === 'dashboard' ? 'bg-brand-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'" class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-pie"></i> Dashboard สรุปข้อมูล
                         </button>
-                        <button v-if="adminRole === 'full'" @click="adminView = 'control'" :class="adminView === 'control' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
-                            <i class="fa-solid fa-sliders mr-1"></i> หน้า Control
+                        <button v-if="adminRole === 'full'" @click="adminView = 'control'" :class="adminView === 'control' ? 'bg-brand-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'" class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders"></i> หน้า Control
                         </button>
-                        <button v-if="adminRole === 'full'" @click="adminView = 'table'" :class="adminView === 'table' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
-                            <i class="fa-solid fa-table-list mr-1"></i> แก้ไขข้อมูลรายบุคคล
+                        <button v-if="adminRole === 'full'" @click="adminView = 'table'" :class="adminView === 'table' ? 'bg-brand-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'" class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-table-list"></i> แก้ไขข้อมูลรายบุคคล
                         </button>
-                        <button v-if="adminRole === 'full'" @click="adminView = 'qrcode'" :class="adminView === 'qrcode' ? 'bg-white text-purple-700 shadow-sm font-bold' : 'text-gray-600 hover:bg-white/50'" class="px-3 py-1.5 rounded-lg transition">
-                            <i class="fa-solid fa-qrcode mr-1"></i> QR Code เช็คอิน
+                        <button v-if="adminRole === 'full'" @click="adminView = 'qrcode'" :class="adminView === 'qrcode' ? 'bg-brand-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'" class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-qrcode"></i> QR Code เช็คอิน
                         </button>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-semibold text-purple-900"><i class="fa-solid fa-calendar-days"></i> ปีสำรวจ:</span>
-                        <select v-model="activeYear" class="px-2 py-1 bg-white border border-purple-200 rounded-lg text-xs font-bold text-purple-700">
+                        <span class="text-slate-400 font-medium"><i class="fa-solid fa-calendar-days mr-1 text-brand-400"></i> ปีสำรวจ:</span>
+                        <select v-model="activeYear" class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                             <option v-for="y in availableYears" :key="y" :value="y">พ.ศ. {{ y }}</option>
                         </select>
                     </div>
@@ -131,248 +156,241 @@
             </div>
         </header>
 
-        <!-- Main Content Area -->
-        <main class="max-w-7xl mx-auto px-4 mt-6">
+        <!-- Main Content Layout -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-8">
 
             <!-- CHECK-IN KIOSK MODE -->
-            <div v-if="currentUserType === 'checkin'" class="max-w-lg mx-auto my-8">
-                <div class="glass-card p-6 md:p-8 rounded-3xl shadow-xl border border-amber-200 space-y-6 text-center">
-                    <div class="w-16 h-16 bg-gradient-to-tr from-amber-400 to-orange-400 text-white rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-md">
+            <div v-if="currentUserType === 'checkin'" class="max-w-lg mx-auto my-10">
+                <div class="modern-glass-card p-8 rounded-3xl space-y-6 text-center border-amber-200/80 shadow-2xl relative overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl"></div>
+                    <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-orange-500 text-white rounded-3xl flex items-center justify-center mx-auto text-3xl shadow-lg shadow-amber-500/30">
                         <i class="fa-solid fa-syringe"></i>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800">จุดเช็คอินรับวัคซีนอัตโนมัติ</h2>
-                        <p class="text-xs text-gray-500 mt-1">กรอกรหัสนักศึกษาเพื่อบันทึกวันรับวัคซีนล่าสุดเป็นวันนี้ ({{ getTodayThaiDate() }})</p>
+                        <h2 class="text-2xl font-bold text-slate-800">จุดเช็คอินรับวัคซีนอัตโนมัติ</h2>
+                        <p class="text-xs text-slate-500 mt-1.5">กรอกรหัสนักศึกษาเพื่อบันทึกวันรับวัคซีนล่าสุดเป็นวันนี้ ({{ getTodayThaiDate() }})</p>
                     </div>
 
                     <div class="space-y-3 text-left">
-                        <label class="block text-xs font-semibold text-gray-600">รหัสนักศึกษา (10 หลัก)</label>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">รหัสนักศึกษา (10 หลัก)</label>
                         <div class="flex gap-2">
-                            <input v-model="checkinStudentId" @keyup.enter="processCheckin" type="text" placeholder="กรอกรหัสนักศึกษา..." class="flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-400 text-base font-mono font-bold">
-                            <button @click="processCheckin" class="px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:opacity-95 transition shadow-md text-sm">
+                            <input v-model="checkinStudentId" @keyup.enter="processCheckin" type="text" placeholder="กรอกรหัสนักศึกษา..." class="flex-1 p-3.5 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-base font-mono font-bold bg-slate-50/50">
+                            <button @click="processCheckin" class="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-2xl hover:opacity-95 transition shadow-lg shadow-amber-500/25 text-sm active:scale-95">
                                 เช็คอิน
                             </button>
                         </div>
                     </div>
 
-                    <div v-if="checkinMessage" class="p-4 rounded-2xl text-sm font-medium transition shadow-sm" :class="checkinSuccess ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
-                        <i :class="checkinSuccess ? 'fa-solid fa-circle-check text-emerald-600' : 'fa-solid fa-circle-xmark text-rose-600'" class="mr-1.5 text-base"></i>
+                    <div v-if="checkinMessage" class="p-4 rounded-2xl text-sm font-semibold transition-all shadow-sm" :class="checkinSuccess ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
+                        <i :class="checkinSuccess ? 'fa-solid fa-circle-check text-emerald-600' : 'fa-solid fa-circle-xmark text-rose-600'" class="mr-2 text-base"></i>
                         {{ checkinMessage }}
                     </div>
                 </div>
             </div>
 
-            <!-- 1. LANDING PAGE / LOGIN -->
+            <!-- 1. LANDING PAGE / GOOGLE WORKSPACE AUTH ONLY -->
             <div v-else-if="currentUserType === 'guest'" class="max-w-md mx-auto my-12">
-                <div class="glass-card p-6 md:p-8 rounded-3xl shadow-lg border border-purple-100 text-center space-y-6">
-                    <div class="w-16 h-16 bg-gradient-to-tr from-purple-400 to-pink-400 text-white rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-md">
+                <div class="modern-glass-card p-8 rounded-3xl text-center space-y-7 relative overflow-hidden">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-brand-600 to-pink-500 text-white rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-xl shadow-brand-500/20 ring-4 ring-purple-50">
                         <i class="fa-solid fa-graduation-cap"></i>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800">เข้าสู่ระบบนักศึกษา</h2>
-                        <p class="text-xs text-gray-500 mt-1">ใช้อีเมล ม.อ. (Google Workspace) เพื่อลงชื่อเข้าใช้งาน</p>
+                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">เข้าสู่ระบบนักศึกษา</h2>
+                        <p class="text-xs text-slate-500 mt-1">ใช้อีเมล ม.อ. (Google Workspace) เพื่อยืนยันตัวตน</p>
                     </div>
 
+                    <!-- Google Workspace Button Container & Error Alert -->
                     <div class="space-y-4 py-2">
                         <div id="googleBtnContainer" class="flex justify-center min-h-[44px]"></div>
-                        <p class="text-[11px] text-gray-400">รองรับบัญชี @g.psu.ac.th และ @psu.ac.th</p>
-                    </div>
-
-                    <div class="relative flex py-1 items-center">
-                        <div class="flex-grow border-t border-gray-200"></div>
-                        <span class="flex-shrink mx-4 text-xs text-gray-400">หรือค้นหาด้วยรหัสนักศึกษา</span>
-                        <div class="flex-grow border-t border-gray-200"></div>
-                    </div>
-
-                    <div class="space-y-3 text-left">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">รหัสนักศึกษา (10 หลัก)</label>
-                            <input v-model="loginInput.username" @keyup.enter="loginStudent" type="text" placeholder="เช่น 6911710001" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 text-sm font-mono font-medium">
-                        </div>
-                        <p v-if="loginError" class="text-xs text-rose-500 font-medium"><i class="fa-solid fa-circle-exclamation"></i> {{ loginError }}</p>
-                        <button @click="loginStudent" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition text-xs flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-magnifying-glass"></i> ตรวจสอบข้อมูลรายบุคคล
-                        </button>
+                        <p class="text-[11px] text-slate-400 font-medium"><i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i> ปลอดภัย รองรับบัญชี @g.psu.ac.th และ @psu.ac.th</p>
+                        <p v-if="loginError" class="text-xs text-rose-500 font-medium bg-rose-50 p-3 rounded-xl border border-rose-100 text-left"><i class="fa-solid fa-circle-exclamation mr-1"></i> {{ loginError }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- 2. STUDENT PERSONAL SURVEY PORTAL -->
             <div v-else-if="currentUserType === 'student' && loggedInStudent" class="space-y-6">
-                <div v-if="!currentControl.isSurveyOpen" class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 flex items-center gap-3 text-sm shadow-sm">
-                    <i class="fa-solid fa-lock text-amber-500 text-xl"></i>
+                <!-- Status Banner -->
+                <div v-if="!currentControl.isSurveyOpen" class="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 flex items-center gap-3 text-sm shadow-sm backdrop-blur-md">
+                    <i class="fa-solid fa-lock text-amber-600 text-xl"></i>
                     <div>
-                        <span class="font-bold">ระบบปิดรับการสำรวจสำหรับปี {{ activeYear }}</span> — ท่านสามารถปรับปรุงข้อมูลส่วนตัวได้ แต่ไม่สามารถเลือกความประสงค์รับวัคซีนได้ในขณะนี้
+                        <span class="font-bold">ระบบปิดรับการสำรวจสำหรับปี {{ activeYear }}</span> — ท่านสามารถอัปเดตข้อมูลส่วนตัวได้ แต่ไม่สามารถเปลี่ยนความประสงค์รับวัคซีนได้ในขณะนี้
                     </div>
                 </div>
 
-                <div class="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-pink-100 max-w-4xl mx-auto space-y-6">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h3 class="text-2xl font-bold text-gray-800">{{ loggedInStudent.name }}</h3>
-                                <span class="px-2.5 py-0.5 bg-purple-100 text-purple-700 font-semibold rounded-full text-xs">ชั้นปีที่ {{ loggedInStudent.year }}</span>
+                <!-- Form Card -->
+                <div class="modern-glass-card p-6 sm:p-8 rounded-3xl max-w-4xl mx-auto space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-5">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-500 to-purple-600 text-white font-bold flex items-center justify-center text-lg shadow-md shadow-brand-500/20">
+                                {{ loggedInStudent.name ? loggedInStudent.name.charAt(0) : 'S' }}
                             </div>
-                            <p class="text-xs text-gray-500 mt-0.5">รหัสนักศึกษา: <span class="font-mono font-semibold text-gray-700">{{ loggedInStudent.id }}</span></p>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-2xl font-bold text-slate-900 tracking-tight">{{ loggedInStudent.name }}</h3>
+                                    <span class="px-3 py-0.5 bg-brand-50 text-brand-700 font-bold rounded-full text-xs border border-brand-200">ชั้นปีที่ {{ loggedInStudent.year }}</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5 font-medium">รหัสนักศึกษา: <span class="font-mono font-bold text-slate-700">{{ loggedInStudent.id }}</span></p>
+                            </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
-                            <div class="flex items-center gap-1.5 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-100">
-                                <span class="text-xs font-semibold text-purple-800">ปีสำรวจ:</span>
-                                <select v-model="activeYear" class="bg-white border border-purple-200 rounded-lg text-xs font-bold px-2 py-1 text-purple-700">
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                                <span class="text-xs font-semibold text-slate-600">ปีสำรวจ:</span>
+                                <select v-model="activeYear" class="bg-white border border-slate-200 rounded-lg text-xs font-bold px-2 py-1 text-brand-700 focus:outline-none">
                                     <option v-for="y in availableYears" :key="y" :value="y">พ.ศ. {{ y }}</option>
                                 </select>
                             </div>
 
-                            <button @click="isEditing = !isEditing" class="px-4 py-2 text-xs font-medium rounded-xl border transition flex items-center gap-2 shadow-sm" :class="isEditing ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
+                            <button @click="isEditing = !isEditing" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm" :class="isEditing ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
                                 <i :class="isEditing ? 'fa-solid fa-check' : 'fa-solid fa-pen-to-square'"></i> {{ isEditing ? 'บันทึกข้อมูล' : 'แก้ไขข้อมูลส่วนตัว' }}
                             </button>
                         </div>
                     </div>
 
-                    <!-- 12 Form Fields -->
+                    <!-- 12 Form Fields Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">1. ชื่อ-นามสกุล</label>
-                            <input v-if="isEditing" v-model="loggedInStudent.name" @change="saveToStorage" type="text" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-medium">{{ loggedInStudent.name || '-' }}</div>
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">1. ชื่อ-นามสกุล</label>
+                            <input v-if="isEditing" v-model="loggedInStudent.name" @change="saveToStorage" type="text" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <div v-else class="font-semibold text-slate-800">{{ loggedInStudent.name || '-' }}</div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">2. รหัสนักศึกษา</label>
-                            <div class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono font-medium">{{ loggedInStudent.id }}</div>
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">2. รหัสนักศึกษา</label>
+                            <div class="font-mono font-bold text-slate-800">{{ loggedInStudent.id }}</div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">3. ชั้นปี</label>
-                            <select v-if="isEditing" v-model.number="loggedInStudent.year" @change="saveToStorage" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">3. ชั้นปี</label>
+                            <select v-if="isEditing" v-model.number="loggedInStudent.year" @change="saveToStorage" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-500">
                                 <option v-for="y in 6" :key="y" :value="y">ชั้นปีที่ {{ y }}</option>
                             </select>
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">ชั้นปีที่ {{ loggedInStudent.year }}</div>
+                            <div v-else class="font-semibold text-slate-800">ชั้นปีที่ {{ loggedInStudent.year }}</div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">4. ชื่อเล่น <span class="text-rose-500">*</span></label>
-                            <input v-if="isEditing" v-model="loggedInStudent.nickname" @change="saveToStorage" type="text" placeholder="ระบุชื่อเล่น" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.nickname || 'ยังไม่ได้ระบุ' }}</div>
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">4. ชื่อเล่น <span class="text-rose-500">*</span></label>
+                            <input v-if="isEditing" v-model="loggedInStudent.nickname" @change="saveToStorage" type="text" placeholder="ระบุชื่อเล่น" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-500">
+                            <div v-else class="font-semibold text-slate-800">{{ loggedInStudent.nickname || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">5. เลข HN โรงพยาบาลสงขลานครินทร์ <span class="text-rose-500">*</span></label>
-                            <input v-if="isEditing" v-model="loggedInStudent.hn" @change="saveToStorage" type="text" placeholder="เช่น 153-91-76" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-mono">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono">{{ loggedInStudent.hn || 'ยังไม่ได้ระบุ' }}</div>
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">5. เลข HN โรงพยาบาลสงขลานครินทร์ <span class="text-rose-500">*</span></label>
+                            <input v-if="isEditing" v-model="loggedInStudent.hn" @change="saveToStorage" type="text" placeholder="เช่น 153-91-76" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:ring-2 focus:ring-brand-500">
+                            <div v-else class="font-mono font-semibold text-slate-800">{{ loggedInStudent.hn || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
 
-                        <div class="md:col-span-2 bg-purple-50/40 p-4 rounded-2xl border border-purple-100">
-                            <label class="block text-xs font-semibold text-purple-900 mb-2">6. สิทธิ์การรักษาทางสุขภาพที่ท่านมี <span class="text-rose-500">*</span></label>
+                        <div class="md:col-span-2 bg-brand-50/40 p-4 rounded-2xl border border-brand-100/80">
+                            <label class="block text-xs font-bold text-brand-900 mb-2">6. สิทธิ์การรักษาทางสุขภาพที่ท่านมี <span class="text-rose-500">*</span></label>
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <label class="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-xl border border-purple-100">
-                                    <input type="radio" value="6.1 สวัสดิการข้าราชการ" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-purple-600">
-                                    <span class="text-xs font-medium">6.1 สวัสดิการข้าราชการ</span>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-brand-100 shadow-xs hover:border-brand-300 transition">
+                                    <input type="radio" value="6.1 สวัสดิการข้าราชการ" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-brand-600 focus:ring-brand-500">
+                                    <span class="text-xs font-semibold text-slate-700">6.1 สวัสดิการข้าราชการ</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-xl border border-purple-100">
-                                    <input type="radio" value="6.2 สิทธิ์บัตรทอง" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-purple-600">
-                                    <span class="text-xs font-medium">6.2 สิทธิ์บัตรทอง</span>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-brand-100 shadow-xs hover:border-brand-300 transition">
+                                    <input type="radio" value="6.2 สิทธิ์บัตรทอง" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-brand-600 focus:ring-brand-500">
+                                    <span class="text-xs font-semibold text-slate-700">6.2 สิทธิ์บัตรทอง</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-xl border border-purple-100">
-                                    <input type="radio" value="6.3 ประกันสุขภาพส่วนบุคคล" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-purple-600">
-                                    <span class="text-xs font-medium">6.3 ประกันสุขภาพส่วนบุคคล</span>
+                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-brand-100 shadow-xs hover:border-brand-300 transition">
+                                    <input type="radio" value="6.3 ประกันสุขภาพส่วนบุคคล" v-model="loggedInStudent.privilege" @change="saveToStorage" :disabled="!isEditing" class="text-brand-600 focus:ring-brand-500">
+                                    <span class="text-xs font-semibold text-slate-700">6.3 ประกันสุขภาพส่วนบุคคล</span>
                                 </label>
                             </div>
                             <div v-if="loggedInStudent.privilege === '6.2 สิทธิ์บัตรทอง'" class="mt-3">
-                                <input v-if="isEditing" v-model="loggedInStudent.privilegeHospital" @change="saveToStorage" type="text" placeholder="โปรดระบุ โรงพยาบาลต้นสิทธิ์บัตรทอง" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                                <p v-else class="text-xs text-purple-700 mt-1 font-medium">โรงพยาบาลต้นสิทธิ์: {{ loggedInStudent.privilegeHospital || 'ยังไม่ได้ระบุ' }}</p>
+                                <input v-if="isEditing" v-model="loggedInStudent.privilegeHospital" @change="saveToStorage" type="text" placeholder="โปรดระบุ โรงพยาบาลต้นสิทธิ์บัตรทอง" class="w-full p-2.5 rounded-xl border border-brand-200 text-sm font-medium">
+                                <p v-else class="text-xs text-brand-800 font-semibold mt-1"><i class="fa-solid fa-hospital mr-1"></i> โรงพยาบาลต้นสิทธิ์: {{ loggedInStudent.privilegeHospital || 'ยังไม่ได้ระบุ' }}</p>
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">7. รับวัคซีนป้องกันโรคพิษสุนัขบ้าเข็มล่าสุดเมื่อวันที่ <span class="text-rose-500">*</span></label>
-                            <input v-if="isEditing" v-model="loggedInStudent.lastVaccineDate" @change="saveToStorage" type="text" placeholder="เช่น 9-เม.ย.-68 หรือ -" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-bold text-purple-700">{{ loggedInStudent.lastVaccineDate || 'ยังไม่ได้ระบุ' }}</div>
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">7. รับวัคซีนเข็มล่าสุดเมื่อวันที่ <span class="text-rose-500">*</span></label>
+                            <input v-if="isEditing" v-model="loggedInStudent.lastVaccineDate" @change="saveToStorage" type="text" placeholder="เช่น 9-เม.ย.-68 หรือ -" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium">
+                            <div v-else class="font-bold text-brand-700">{{ loggedInStudent.lastVaccineDate || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">8. รูปแบบการรับวัคซีนเดิม <span class="text-rose-500">*</span></label>
-                            <select v-if="isEditing" v-model="loggedInStudent.vaccineType" @change="saveToStorage" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">8. รูปแบบการรับวัคซีนเดิม <span class="text-rose-500">*</span></label>
+                            <select v-if="isEditing" v-model="loggedInStudent.vaccineType" @change="saveToStorage" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium">
                                 <option value="">-- โปรดเลือก --</option>
                                 <option value="สร้างภูมิ 3 เข็ม">สร้างภูมิ 3 เข็ม</option>
                                 <option value="กระตุ้นภูมิ 1 เข็ม">กระตุ้นภูมิ 1 เข็ม</option>
                             </select>
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.vaccineType || 'ยังไม่ได้ระบุ' }}</div>
+                            <div v-else class="font-semibold text-slate-800">{{ loggedInStudent.vaccineType || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">9. อาการแพ้อาหาร</label>
-                            <input v-if="isEditing" v-model="loggedInStudent.foodAllergy" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ เช่น อาหารทะเล" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100" :class="loggedInStudent.foodAllergy && loggedInStudent.foodAllergy !== '-' ? 'text-amber-600 font-bold' : ''">
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">9. อาการแพ้อาหาร</label>
+                            <input v-if="isEditing" v-model="loggedInStudent.foodAllergy" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm">
+                            <div v-else class="font-semibold" :class="loggedInStudent.foodAllergy && loggedInStudent.foodAllergy !== '-' ? 'text-amber-600 font-bold' : 'text-slate-800'">
                                 {{ loggedInStudent.foodAllergy || 'ไม่มี' }}
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">10. อาการแพ้ยา</label>
-                            <input v-if="isEditing" v-model="loggedInStudent.drugAllergy" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ เช่น Cefalexin" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100" :class="loggedInStudent.drugAllergy && loggedInStudent.drugAllergy !== '-' ? 'text-rose-600 font-bold' : ''">
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">10. อาการแพ้ยา</label>
+                            <input v-if="isEditing" v-model="loggedInStudent.drugAllergy" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm">
+                            <div v-else class="font-semibold" :class="loggedInStudent.drugAllergy && loggedInStudent.drugAllergy !== '-' ? 'text-rose-600 font-bold' : 'text-slate-800'">
                                 {{ loggedInStudent.drugAllergy || 'ไม่มี' }}
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">11. โรคประจำตัว (ถ้ามี)</label>
-                            <input v-if="isEditing" v-model="loggedInStudent.chronicDisease" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100">{{ loggedInStudent.chronicDisease || 'ไม่มี' }}</div>
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">11. โรคประจำตัว (ถ้ามี)</label>
+                            <input v-if="isEditing" v-model="loggedInStudent.chronicDisease" @change="saveToStorage" type="text" placeholder="ไม่มี หรือระบุ" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm">
+                            <div v-else class="font-semibold text-slate-800">{{ loggedInStudent.chronicDisease || 'ไม่มี' }}</div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">12. เบอร์โทรศัพท์ <span class="text-rose-500">*</span></label>
-                            <input v-if="isEditing" v-model="loggedInStudent.phone" @change="saveToStorage" type="text" placeholder="เช่น 0812345678" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-mono">
-                            <div v-else class="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 font-mono">{{ loggedInStudent.phone || 'ยังไม่ได้ระบุ' }}</div>
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">12. เบอร์โทรศัพท์ <span class="text-rose-500">*</span></label>
+                            <input v-if="isEditing" v-model="loggedInStudent.phone" @change="saveToStorage" type="text" placeholder="เช่น 0812345678" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-mono">
+                            <div v-else class="font-mono font-semibold text-slate-800">{{ loggedInStudent.phone || 'ยังไม่ได้ระบุ' }}</div>
                         </div>
                     </div>
 
-                    <!-- Survey Decision Section -->
-                    <div class="mt-6 pt-6 border-t border-pink-100 bg-gradient-to-r from-pink-50/60 to-purple-50/60 p-6 rounded-2xl border shadow-sm">
+                    <!-- Modern Interactive Decision Cards -->
+                    <div class="mt-8 pt-6 border-t border-slate-100 bg-gradient-to-r from-purple-50/50 via-pink-50/30 to-brand-50/50 p-6 rounded-3xl border border-purple-100/60 shadow-xs">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                                <h4 class="font-bold text-gray-800 text-base flex items-center gap-2">
-                                    <i class="fa-solid fa-syringe text-pink-500"></i> ประสงค์ฉีดวัคซีนประจำปี {{ activeYear }}
+                                <h4 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+                                    <i class="fa-solid fa-syringe text-brand-600"></i> ประสงค์ฉีดวัคซีนประจำปี {{ activeYear }}
                                 </h4>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    <span v-if="!isFormComplete" class="text-rose-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i> กรุณากรอกข้อมูลส่วนตัวทั้ง 12 หัวข้อให้ครบถ้วนก่อนเลือกความประสงค์</span>
-                                    <span v-else-if="!currentControl.isSurveyOpen" class="text-amber-600 font-medium"><i class="fa-solid fa-lock"></i> ระบบสำรวจปิดอยู่โดยผู้ดูแลระบบ</span>
-                                    <span v-else class="text-emerald-600 font-medium"><i class="fa-solid fa-circle-check"></i> ข้อมูลครบถ้วนแล้ว สามารถเลือกความประสงค์ได้</span>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    <span v-if="!isFormComplete" class="text-rose-500 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> กรุณากรอกข้อมูลส่วนตัวทั้ง 12 หัวข้อให้ครบถ้วนก่อนเลือกความประสงค์</span>
+                                    <span v-else-if="!currentControl.isSurveyOpen" class="text-amber-600 font-semibold"><i class="fa-solid fa-lock mr-1"></i> ระบบสำรวจปิดอยู่โดยผู้ดูแลระบบ</span>
+                                    <span v-else class="text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i> ข้อมูลครบถ้วนแล้ว สามารถเลือกความประสงค์ได้</span>
                                 </p>
                             </div>
 
-                            <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
                                 <button @click="confirmVaccine(true, '1 เข็ม')" 
                                         :disabled="!canChooseVaccine"
-                                        :class="currentStudentSurvey.vaccineChoice === true && currentStudentSurvey.doseType === '1 เข็ม' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50'"
-                                        class="px-4 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
-                                    <i class="fa-solid fa-square-check"></i> ใช่ (กระตุ้น 1 เข็ม)
+                                        :class="currentStudentSurvey.vaccineChoice === true && currentStudentSurvey.doseType === '1 เข็ม' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-600' : 'bg-white text-emerald-700 border border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/50'"
+                                        class="flex-1 md:flex-none px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xs active:scale-95">
+                                    <i class="fa-solid fa-circle-check"></i> ใช่ (กระตุ้น 1 เข็ม)
                                 </button>
 
                                 <button @click="confirmVaccine(true, '3 เข็ม')" 
                                         :disabled="!canChooseVaccine"
-                                        :class="currentStudentSurvey.vaccineChoice === true && currentStudentSurvey.doseType === '3 เข็ม' ? 'bg-purple-600 text-white shadow-md' : 'bg-white text-purple-700 border border-purple-300 hover:bg-purple-50'"
-                                        class="px-4 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
-                                    <i class="fa-solid fa-square-check"></i> ใช่ (สร้างภูมิ 3 เข็ม)
+                                        :class="currentStudentSurvey.vaccineChoice === true && currentStudentSurvey.doseType === '3 เข็ม' ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/25 ring-2 ring-brand-600' : 'bg-white text-brand-700 border border-brand-200 hover:border-brand-400 hover:bg-brand-50/50'"
+                                        class="flex-1 md:flex-none px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xs active:scale-95">
+                                    <i class="fa-solid fa-circle-check"></i> ใช่ (สร้างภูมิ 3 เข็ม)
                                 </button>
 
                                 <button @click="confirmVaccine(false, '')" 
                                         :disabled="!canChooseVaccine"
-                                        :class="currentStudentSurvey.vaccineChoice === false ? 'bg-rose-600 text-white shadow-md' : 'bg-white text-rose-700 border border-rose-300 hover:bg-rose-50'"
-                                        class="px-4 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
-                                    <i class="fa-solid fa-rectangle-xmark"></i> ไม่ประสงค์ฉีด
+                                        :class="currentStudentSurvey.vaccineChoice === false ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/25 ring-2 ring-rose-600' : 'bg-white text-rose-700 border border-rose-200 hover:border-rose-400 hover:bg-rose-50/50'"
+                                        class="flex-1 md:flex-none px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xs active:scale-95">
+                                    <i class="fa-solid fa-circle-xmark"></i> ไม่ประสงค์ฉีด
                                 </button>
                             </div>
                         </div>
                         
-                        <div v-if="currentStudentSurvey.vaccineChoice !== null" class="mt-4 pt-3 border-t border-purple-100 flex flex-col sm:flex-row justify-between items-center text-xs gap-2">
+                        <div v-if="currentStudentSurvey.vaccineChoice !== null" class="mt-4 pt-3.5 border-t border-slate-200/60 flex flex-col sm:flex-row justify-between items-center text-xs gap-2">
                             <span class="font-bold" :class="currentStudentSurvey.vaccineChoice ? 'text-emerald-700' : 'text-rose-700'">
                                 สถานะปัจจุบัน: {{ currentStudentSurvey.vaccineChoice ? `✓ ประสงค์รับวัคซีนแบบ (${currentStudentSurvey.doseType})` : '✗ ไม่ประสงค์รับวัคซีน' }}
                             </span>
-                            <span class="text-gray-500 font-mono text-xs">
+                            <span class="text-slate-500 font-mono text-xs">
                                 <i class="fa-regular fa-clock mr-1"></i> บันทึกเมื่อ: {{ currentStudentSurvey.timestamp || 'ยังไม่ได้บันทึก' }}
                             </span>
                         </div>
@@ -387,45 +405,59 @@
                 <div v-if="adminView === 'dashboard'" class="space-y-6">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">Dashboard สรุปการฉีดวัคซีน (ปี {{ activeYear }})</h2>
-                            <p class="text-xs text-gray-500">สรุปภาพรวมรายชั้นปีของ คณะสัตวแพทยศาสตร์ ม.อ.</p>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Dashboard สรุปการฉีดวัคซีน (ปี {{ activeYear }})</h2>
+                            <p class="text-xs text-slate-500">ภาพรวมสรุปจำนวนวัคซีนแยกตามชั้นปี คณะสัตวแพทยศาสตร์ ม.อ.</p>
                         </div>
                         <div class="flex gap-2">
-                            <span class="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold">
+                            <span class="px-3.5 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-200">
                                 นักศึกษาทั้งหมด {{ overallDashboardStats.totalStudents }} คน
                             </span>
-                            <span class="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-xl text-xs font-bold">
+                            <span class="px-3.5 py-1.5 bg-brand-50 text-brand-700 rounded-xl text-xs font-bold border border-brand-200">
                                 วัคซีนต้องใช้รวม {{ overallDashboardStats.totalVaccines }} โดส
                             </span>
                         </div>
                     </div>
 
+                    <!-- KPI Cards Grid -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="glass-card p-4 rounded-2xl border border-blue-100">
-                            <p class="text-xs font-semibold text-gray-500">จำนวนนักศึกษาทั้งหมด</p>
-                            <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ overallDashboardStats.totalStudents }} <span class="text-xs font-normal">คน</span></h3>
+                        <div class="modern-glass-card p-5 rounded-3xl space-y-2 border-slate-200/80">
+                            <div class="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-base font-bold">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <p class="text-xs font-semibold text-slate-500">นักศึกษาทั้งหมด</p>
+                            <h3 class="text-2xl font-bold text-slate-900">{{ overallDashboardStats.totalStudents }} <span class="text-xs font-normal text-slate-500">คน</span></h3>
                         </div>
-                        <div class="glass-card p-4 rounded-2xl border border-emerald-100">
+                        <div class="modern-glass-card p-5 rounded-3xl space-y-2 border-emerald-100">
+                            <div class="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base font-bold">
+                                <i class="fa-solid fa-user-check"></i>
+                            </div>
                             <p class="text-xs font-semibold text-emerald-600">ประสงค์ฉีดวัคซีน</p>
-                            <h3 class="text-2xl font-bold text-emerald-700 mt-1">{{ overallDashboardStats.totalVaccineUsers }} <span class="text-xs font-normal">คน ({{ overallDashboardStats.percentVaccinated }}%)</span></h3>
+                            <h3 class="text-2xl font-bold text-emerald-700">{{ overallDashboardStats.totalVaccineUsers }} <span class="text-xs font-normal text-emerald-600">คน ({{ overallDashboardStats.percentVaccinated }}%)</span></h3>
                         </div>
-                        <div class="glass-card p-4 rounded-2xl border border-purple-100">
+                        <div class="modern-glass-card p-5 rounded-3xl space-y-2 border-purple-100">
+                            <div class="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-base font-bold">
+                                <i class="fa-solid fa-syringe"></i>
+                            </div>
                             <p class="text-xs font-semibold text-purple-600">ฉีดกระตุ้น 1 เข็ม</p>
-                            <h3 class="text-2xl font-bold text-purple-700 mt-1">{{ overallDashboardStats.total1Dose }} <span class="text-xs font-normal">คน</span></h3>
+                            <h3 class="text-2xl font-bold text-purple-700">{{ overallDashboardStats.total1Dose }} <span class="text-xs font-normal text-purple-600">คน</span></h3>
                         </div>
-                        <div class="glass-card p-4 rounded-2xl border border-pink-100">
+                        <div class="modern-glass-card p-5 rounded-3xl space-y-2 border-pink-100">
+                            <div class="w-9 h-9 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-base font-bold">
+                                <i class="fa-solid fa-vial"></i>
+                            </div>
                             <p class="text-xs font-semibold text-pink-600">ฉีดสร้างภูมิ 3 เข็ม</p>
-                            <h3 class="text-2xl font-bold text-pink-700 mt-1">{{ overallDashboardStats.total3Dose }} <span class="text-xs font-normal">คน</span></h3>
+                            <h3 class="text-2xl font-bold text-pink-700">{{ overallDashboardStats.total3Dose }} <span class="text-xs font-normal text-pink-600">คน</span></h3>
                         </div>
                     </div>
 
-                    <div class="glass-card rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
-                        <div class="p-4 border-b border-gray-100 font-bold text-gray-800 flex justify-between items-center">
-                            <span><i class="fa-solid fa-list-check text-purple-500 mr-2"></i> สรุปข้อมูลแยกตามชั้นปี (ไม่รวม Row ที่ถูกซ่อน)</span>
+                    <!-- Summary Table Card -->
+                    <div class="modern-glass-card rounded-3xl overflow-hidden shadow-sm">
+                        <div class="p-4 sm:p-5 border-b border-slate-100 font-bold text-slate-800 flex justify-between items-center bg-slate-50/50">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-chart-column text-brand-600"></i> สรุปข้อมูลแยกตามชั้นปี (ไม่รวม Row ที่ถูกซ่อน)</span>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs md:text-sm">
-                                <thead class="bg-purple-50/70 text-purple-900 border-b border-purple-100 font-semibold">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left text-xs sm:text-sm">
+                                <thead class="bg-slate-100/70 text-slate-700 font-bold border-b border-slate-200/80">
                                     <tr>
                                         <th class="p-3.5">ชั้นปี</th>
                                         <th class="p-3.5 text-center">นักศึกษาทั้งชั้นปี (คน)</th>
@@ -433,31 +465,31 @@
                                         <th class="p-3.5 text-center">สัดส่วนฉีด (%)</th>
                                         <th class="p-3.5 text-center">ฉีด 1 เข็ม (คน)</th>
                                         <th class="p-3.5 text-center">ฉีด 3 เข็ม (คน)</th>
-                                        <th class="p-3.5 text-center bg-purple-100/70 font-bold">จำนวนวัคซีนที่ต้องใช้ (โดส)</th>
+                                        <th class="p-3.5 text-center bg-brand-50 text-brand-900 font-bold">จำนวนวัคซีนที่ต้องใช้ (โดส)</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="s in yearDashboardStats" :key="s.year" class="hover:bg-gray-50/80 transition">
-                                        <td class="p-3.5 font-bold text-gray-800">ชั้นปีที่ {{ s.year }}</td>
-                                        <td class="p-3.5 text-center font-mono font-medium">{{ s.totalStudents }}</td>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="s in yearDashboardStats" :key="s.year" class="hover:bg-slate-50/80 transition">
+                                        <td class="p-3.5 font-bold text-slate-900">ชั้นปีที่ {{ s.year }}</td>
+                                        <td class="p-3.5 text-center font-mono font-medium text-slate-700">{{ s.totalStudents }}</td>
                                         <td class="p-3.5 text-center font-mono font-bold text-emerald-600">{{ s.vaxCount }}</td>
                                         <td class="p-3.5 text-center font-mono">
-                                            <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs">{{ s.percent }}%</span>
+                                            <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-100">{{ s.percent }}%</span>
                                         </td>
                                         <td class="p-3.5 text-center font-mono text-purple-600 font-bold">{{ s.count1Dose }}</td>
                                         <td class="p-3.5 text-center font-mono text-pink-600 font-bold">{{ s.count3Dose }}</td>
-                                        <td class="p-3.5 text-center font-mono font-bold text-purple-900 bg-purple-50/30">{{ s.vaccinesNeeded }}</td>
+                                        <td class="p-3.5 text-center font-mono font-bold text-brand-900 bg-brand-50/40">{{ s.vaccinesNeeded }}</td>
                                     </tr>
                                 </tbody>
-                                <tfoot class="bg-gray-100/80 font-bold border-t border-gray-200">
+                                <tfoot class="bg-slate-100/90 font-bold border-t border-slate-200">
                                     <tr>
-                                        <td class="p-3.5">รวมทั้งสิ้น</td>
-                                        <td class="p-3.5 text-center font-mono">{{ overallDashboardStats.totalStudents }}</td>
+                                        <td class="p-3.5 text-slate-900">รวมทั้งสิ้น</td>
+                                        <td class="p-3.5 text-center font-mono text-slate-900">{{ overallDashboardStats.totalStudents }}</td>
                                         <td class="p-3.5 text-center font-mono text-emerald-700">{{ overallDashboardStats.totalVaccineUsers }}</td>
                                         <td class="p-3.5 text-center font-mono text-emerald-700">{{ overallDashboardStats.percentVaccinated }}%</td>
                                         <td class="p-3.5 text-center font-mono text-purple-700">{{ overallDashboardStats.total1Dose }}</td>
                                         <td class="p-3.5 text-center font-mono text-pink-700">{{ overallDashboardStats.total3Dose }}</td>
-                                        <td class="p-3.5 text-center font-mono text-purple-900 bg-purple-200/60">{{ overallDashboardStats.totalVaccines }}</td>
+                                        <td class="p-3.5 text-center font-mono text-brand-900 bg-brand-100/80">{{ overallDashboardStats.totalVaccines }}</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -467,162 +499,162 @@
 
                 <!-- 3.2 CONTROL PANEL -->
                 <div v-else-if="adminView === 'control' && adminRole === 'full'" class="space-y-6 max-w-2xl mx-auto">
-                    <div class="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-purple-100 space-y-6">
+                    <div class="modern-glass-card p-8 rounded-3xl space-y-6">
                         <div>
-                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <i class="fa-solid fa-sliders text-purple-600"></i> หน้า Control เปิด-ปิดการสำรวจ
+                            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-brand-600"></i> หน้า Control เปิด-ปิดการสำรวจ
                             </h2>
-                            <p class="text-xs text-gray-500">กำหนดปีการศึกษาและควบคุมการเปิดรับข้อมูลจากนักศึกษา</p>
+                            <p class="text-xs text-slate-500 mt-1">กำหนดปีการศึกษาและควบคุมการเปิดรับข้อมูลจากนักศึกษา</p>
                         </div>
 
                         <div class="space-y-3">
-                            <label class="block text-sm font-bold text-gray-700">เปิดสำรวจปีการศึกษาใหม่</label>
+                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">เปิดสำรวจปีการศึกษาใหม่</label>
                             <div class="flex gap-2">
-                                <input v-model="newYearInput" type="text" placeholder="ระบุ พ.ศ. เช่น 2569" class="flex-1 p-2.5 rounded-xl border border-gray-200 text-sm font-mono font-medium">
-                                <button @click="addSurveyYear" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition">
+                                <input v-model="newYearInput" type="text" placeholder="ระบุ พ.ศ. เช่น 2569" class="flex-1 p-3 rounded-2xl border border-slate-200 text-sm font-mono font-bold focus:ring-2 focus:ring-brand-500">
+                                <button @click="addSurveyYear" class="px-5 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-2xl transition shadow-md shadow-brand-500/20">
                                     <i class="fa-solid fa-plus mr-1"></i> เพิ่มปีสำรวจ
                                 </button>
                             </div>
                         </div>
 
-                        <div class="p-4 rounded-2xl border flex items-center justify-between" :class="currentControl.isSurveyOpen ? 'bg-emerald-50/70 border-emerald-200' : 'bg-rose-50/70 border-rose-200'">
+                        <div class="p-5 rounded-2xl border flex items-center justify-between" :class="currentControl.isSurveyOpen ? 'bg-emerald-50/80 border-emerald-200' : 'bg-rose-50/80 border-rose-200'">
                             <div>
-                                <h4 class="font-bold text-sm" :class="currentControl.isSurveyOpen ? 'text-emerald-800' : 'text-rose-800'">
+                                <h4 class="font-bold text-sm" :class="currentControl.isSurveyOpen ? 'text-emerald-900' : 'text-rose-900'">
                                     สถานะการสำรวจปี {{ activeYear }}: {{ currentControl.isSurveyOpen ? 'เปิดรับข้อมูล' : 'ปิดรับข้อมูล' }}
                                 </h4>
-                                <p class="text-xs text-gray-500 mt-0.5">
+                                <p class="text-xs text-slate-500 mt-0.5">
                                     {{ currentControl.isSurveyOpen ? 'นักศึกษาสามารถเลือกความประสงค์ได้' : 'ไม่อนุญาตให้นักศึกษาเปลี่ยนความประสงค์' }}
                                 </p>
                             </div>
-                            <button @click="toggleSurveyOpenStatus" class="px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-sm" :class="currentControl.isSurveyOpen ? 'bg-rose-500 hover:bg-rose-600 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'">
+                            <button @click="toggleSurveyOpenStatus" class="px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-sm" :class="currentControl.isSurveyOpen ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'">
                                 {{ currentControl.isSurveyOpen ? 'ปิดการสำรวจ' : 'เปิดการสำรวจ' }}
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 3.3 ADMIN DATA TABLE VIEW (SUPPORT PASTE FROM EXCEL / GOOGLE SHEETS) -->
+                <!-- 3.3 ADMIN DATA TABLE VIEW -->
                 <div v-else-if="adminView === 'table' && adminRole === 'full'" class="space-y-4">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                            <h2 class="text-xl font-bold text-gray-800">แก้ไขข้อมูลรายบุคคล (ปี {{ activeYear }})</h2>
-                            <p class="text-xs text-gray-500"><i class="fa-solid fa-paste text-purple-500 mr-1"></i> รองรับการคัดลอกจาก Excel มาวาง (Ctrl+V) ได้ในครั้งเดียว</p>
+                            <h2 class="text-xl font-bold text-slate-900">แก้ไขข้อมูลรายบุคคล (ปี {{ activeYear }})</h2>
+                            <p class="text-xs text-slate-500 mt-0.5"><i class="fa-solid fa-paste text-brand-500 mr-1"></i> รองรับการคัดลอกจาก Excel มาวาง (Ctrl+V) ได้ในครั้งเดียว</p>
                         </div>
 
                         <div>
-                            <button @click="addNewRowAtEnd" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center gap-1.5">
+                            <button @click="addNewRowAtEnd" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-2xl transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5 active:scale-95">
                                 <i class="fa-solid fa-plus"></i> เพิ่มแถวใหม่ (แถวเปล่า)
                             </button>
                         </div>
                     </div>
 
-                    <!-- Filters -->
-                    <div class="flex flex-wrap gap-2 text-xs bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                        <select v-model="filterYear" class="p-2 rounded-xl border border-gray-200">
+                    <!-- Filters Bar -->
+                    <div class="flex flex-wrap gap-2 text-xs bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                        <select v-model="filterYear" class="p-2 rounded-xl border border-slate-200 font-medium focus:ring-2 focus:ring-brand-500">
                             <option value="all">ทุกชั้นปี (1-6)</option>
                             <option v-for="y in 6" :key="y" :value="y">ชั้นปีที่ {{ y }}</option>
                         </select>
 
-                        <select v-model="filterChoice" class="p-2 rounded-xl border border-gray-200">
+                        <select v-model="filterChoice" class="p-2 rounded-xl border border-slate-200 font-medium focus:ring-2 focus:ring-brand-500">
                             <option value="all">ความประสงค์ทั้งหมด</option>
                             <option value="yes">ประสงค์ฉีด (ใช่)</option>
                             <option value="no">ไม่ประสงค์ฉีด (ไม่)</option>
                             <option value="none">ยังไม่ระบุ</option>
                         </select>
 
-                        <select v-model="filterHidden" class="p-2 rounded-xl border border-gray-200">
+                        <select v-model="filterHidden" class="p-2 rounded-xl border border-slate-200 font-medium focus:ring-2 focus:ring-brand-500">
                             <option value="all">สถานะ Row ทั้งหมด</option>
                             <option value="visible">เฉพาะ Row ที่แสดงปกติ</option>
                             <option value="hidden">เฉพาะ Row ที่ถูกซ่อน</option>
                         </select>
 
-                        <input v-model="filterSearch" type="text" placeholder="ค้นหาชื่อ หรือ รหัส..." class="p-2 rounded-xl border border-gray-200 w-44">
+                        <input v-model="filterSearch" type="text" placeholder="ค้นหาชื่อ หรือ รหัส..." class="p-2 rounded-xl border border-slate-200 w-48 font-medium focus:ring-2 focus:ring-brand-500">
                     </div>
 
-                    <!-- Editable Data Table with Excel Paste Handler -->
-                    <div class="glass-card rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
-                        <div class="overflow-x-auto max-h-[600px]">
+                    <!-- Editable Spreadsheet Data Table -->
+                    <div class="modern-glass-card rounded-3xl overflow-hidden shadow-xs">
+                        <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
                             <table class="w-full text-left text-xs">
-                                <thead class="bg-gray-100 text-gray-700 sticky top-0 z-10 font-semibold border-b">
+                                <thead class="bg-slate-900 text-white sticky top-0 z-10 font-bold">
                                     <tr>
-                                        <th class="p-2.5 text-center">#</th>
-                                        <th class="p-2.5">รหัสนักศึกษา</th>
-                                        <th class="p-2.5">ชื่อ-นามสกุล</th>
-                                        <th class="p-2.5 text-center">ปี</th>
-                                        <th class="p-2.5">HN ม.อ.</th>
-                                        <th class="p-2.5">ฉีดล่าสุดวันที่</th>
-                                        <th class="p-2.5">แพ้ยา</th>
-                                        <th class="p-2.5">แพ้อาหาร</th>
-                                        <th class="p-2.5">เบอร์โทร</th>
-                                        <th class="p-2.5 text-center">ความประสงค์</th>
-                                        <th class="p-2.5 text-center">จำนวนเข็ม</th>
-                                        <th class="p-2.5">Timestamp ยืนยัน</th>
-                                        <th class="p-2.5 text-center">สถานะ</th>
-                                        <th class="p-2.5 text-center">เครื่องมือ</th>
+                                        <th class="p-3 text-center">#</th>
+                                        <th class="p-3 min-w-[110px]">รหัสนักศึกษา</th>
+                                        <th class="p-3 min-w-[220px]">ชื่อ-นามสกุล</th>
+                                        <th class="p-3 text-center min-w-[60px]">ปี</th>
+                                        <th class="p-3 min-w-[100px]">HN ม.อ.</th>
+                                        <th class="p-3 min-w-[100px]">ฉีดล่าสุดวันที่</th>
+                                        <th class="p-3 min-w-[100px]">แพ้ยา</th>
+                                        <th class="p-3 min-w-[100px]">แพ้อาหาร</th>
+                                        <th class="p-3 min-w-[110px]">เบอร์โทร</th>
+                                        <th class="p-3 text-center min-w-[110px]">ความประสงค์</th>
+                                        <th class="p-3 text-center min-w-[90px]">จำนวนเข็ม</th>
+                                        <th class="p-3 min-w-[150px]">Timestamp ยืนยัน</th>
+                                        <th class="p-3 text-center min-w-[80px]">สถานะ</th>
+                                        <th class="p-3 text-center min-w-[80px]">เครื่องมือ</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="(st, idx) in filteredStudents" :key="st._uid" :class="getSurveyData(st).hidden ? 'bg-gray-100/70 text-gray-400 opacity-60' : 'hover:bg-purple-50/40'">
-                                        <td class="p-2 text-center font-mono font-semibold">{{ idx + 1 }}</td>
-                                        <td class="p-2 font-mono font-bold">
-                                            <input v-model="st.id" @paste="handlePaste($event, idx, 'id')" @change="saveToStorage" type="text" placeholder="รหัส 10 หลัก" class="w-24 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-mono">
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="(st, idx) in filteredStudents" :key="st._uid" :class="getSurveyData(st).hidden ? 'bg-slate-100/70 text-slate-400 opacity-60' : 'hover:bg-brand-50/40 transition'">
+                                        <td class="p-2.5 text-center font-mono font-bold text-slate-400">{{ idx + 1 }}</td>
+                                        <td class="p-2.5 font-mono font-bold min-w-[110px]">
+                                            <input v-model="st.id" @paste="handlePaste($event, idx, 'id')" @change="saveToStorage" type="text" placeholder="รหัส 10 หลัก" class="w-full bg-transparent p-1 border-b border-slate-200 focus:border-brand-500 font-mono font-bold">
                                         </td>
-                                        <td class="p-2">
-                                            <input v-model="st.name" @paste="handlePaste($event, idx, 'name')" @change="saveToStorage" type="text" placeholder="ชื่อ-นามสกุล" class="w-full bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-medium">
+                                        <td class="p-2.5 min-w-[220px]">
+                                            <input v-model="st.name" @paste="handlePaste($event, idx, 'name')" @change="saveToStorage" type="text" placeholder="ชื่อ-นามสกุล" class="w-full min-w-[200px] bg-transparent p-1 border-b border-slate-200 focus:border-brand-500 font-medium">
                                         </td>
-                                        <td class="p-2 text-center">
-                                            <input v-model.number="st.year" @paste="handlePaste($event, idx, 'year')" @change="saveToStorage" type="number" min="1" max="6" class="w-10 text-center bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-bold">
+                                        <td class="p-2.5 text-center min-w-[60px]">
+                                            <input v-model.number="st.year" @paste="handlePaste($event, idx, 'year')" @change="saveToStorage" type="number" min="1" max="6" class="w-full text-center bg-transparent p-1 border-b border-slate-200 focus:border-brand-500 font-bold">
                                         </td>
-                                        <td class="p-2">
-                                            <input v-model="st.hn" @paste="handlePaste($event, idx, 'hn')" @change="saveToStorage" type="text" placeholder="HN" class="w-20 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-mono">
+                                        <td class="p-2.5 min-w-[100px]">
+                                            <input v-model="st.hn" @paste="handlePaste($event, idx, 'hn')" @change="saveToStorage" type="text" placeholder="HN" class="w-full bg-transparent p-1 border-b border-slate-200 focus:border-brand-500 font-mono">
                                         </td>
-                                        <td class="p-2">
-                                            <input v-model="st.lastVaccineDate" @paste="handlePaste($event, idx, 'lastVaccineDate')" @change="saveToStorage" type="text" placeholder="วันที่" class="w-20 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 text-xs">
+                                        <td class="p-2.5 min-w-[100px]">
+                                            <input v-model="st.lastVaccineDate" @paste="handlePaste($event, idx, 'lastVaccineDate')" @change="saveToStorage" type="text" placeholder="วันที่" class="w-full bg-transparent p-1 border-b border-slate-200 focus:border-brand-500 text-xs font-semibold">
                                         </td>
-                                        <td class="p-2">
-                                            <input v-model="st.drugAllergy" @paste="handlePaste($event, idx, 'drugAllergy')" @change="saveToStorage" type="text" placeholder="แพ้ยา" class="w-20 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500">
+                                        <td class="p-2.5 min-w-[100px]">
+                                            <input v-model="st.drugAllergy" @paste="handlePaste($event, idx, 'drugAllergy')" @change="saveToStorage" type="text" placeholder="แพ้ยา" class="w-full bg-transparent p-1 border-b border-slate-200 focus:border-brand-500">
                                         </td>
-                                        <td class="p-2">
-                                            <input v-model="st.foodAllergy" @paste="handlePaste($event, idx, 'foodAllergy')" @change="saveToStorage" type="text" placeholder="แพ้อาหาร" class="w-20 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500">
+                                        <td class="p-2.5 min-w-[100px]">
+                                            <input v-model="st.foodAllergy" @paste="handlePaste($event, idx, 'foodAllergy')" @change="saveToStorage" type="text" placeholder="แพ้อาหาร" class="w-full bg-transparent p-1 border-b border-slate-200 focus:border-brand-500">
                                         </td>
-                                        <td class="p-2">
-                                            <input v-model="st.phone" @paste="handlePaste($event, idx, 'phone')" @change="saveToStorage" type="text" placeholder="เบอร์โทร" class="w-24 bg-transparent p-1 border-b border-gray-200 focus:border-purple-500 font-mono">
+                                        <td class="p-2.5 min-w-[110px]">
+                                            <input v-model="st.phone" @paste="handlePaste($event, idx, 'phone')" @change="saveToStorage" type="text" placeholder="เบอร์โทร" class="w-full bg-transparent p-1 border-b border-slate-200 focus:border-brand-500 font-mono">
                                         </td>
 
-                                        <td class="p-2 text-center">
-                                            <select v-model="getSurveyData(st).vaccineChoice" @change="updateTimestampOnAdminChange(st)" class="p-1 rounded font-bold text-xs" :class="getSurveyData(st).vaccineChoice === true ? 'bg-emerald-100 text-emerald-800' : getSurveyData(st).vaccineChoice === false ? 'bg-rose-100 text-rose-800' : 'bg-gray-100 text-gray-600'">
+                                        <td class="p-2.5 text-center min-w-[110px]">
+                                            <select v-model="getSurveyData(st).vaccineChoice" @change="updateTimestampOnAdminChange(st)" class="p-1.5 rounded-xl font-bold text-xs shadow-2xs" :class="getSurveyData(st).vaccineChoice === true ? 'bg-emerald-100 text-emerald-800' : getSurveyData(st).vaccineChoice === false ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-600'">
                                                 <option :value="null">ยังไม่ระบุ</option>
                                                 <option :value="true">ใช่ (ประสงค์)</option>
                                                 <option :value="false">ไม่ (ไม่ประสงค์)</option>
                                             </select>
                                         </td>
 
-                                        <td class="p-2 text-center">
-                                            <select v-model="getSurveyData(st).doseType" @change="saveToStorage" class="p-1 rounded border border-gray-200">
+                                        <td class="p-2.5 text-center min-w-[90px]">
+                                            <select v-model="getSurveyData(st).doseType" @change="saveToStorage" class="p-1 rounded-xl border border-slate-200 font-medium">
                                                 <option value="1 เข็ม">1 เข็ม</option>
                                                 <option value="3 เข็ม">3 เข็ม</option>
                                             </select>
                                         </td>
 
-                                        <td class="p-2 font-mono text-xs text-gray-600">
+                                        <td class="p-2.5 font-mono text-xs text-slate-500 min-w-[150px]">
                                             {{ getSurveyData(st).timestamp || '-' }}
                                         </td>
 
-                                        <td class="p-2 text-center">
-                                            <span v-if="getSurveyData(st).hidden" class="px-2 py-0.5 bg-gray-300 text-gray-700 rounded-full font-bold text-[10px]">
-                                                <i class="fa-solid fa-eye-slash"></i> ซ่อนอยู่
+                                        <td class="p-2.5 text-center min-w-[80px]">
+                                            <span v-if="getSurveyData(st).hidden" class="px-2.5 py-0.5 bg-slate-200 text-slate-700 rounded-full font-bold text-[10px]">
+                                                <i class="fa-solid fa-eye-slash"></i> ซ่อน
                                             </span>
-                                            <span v-else class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-bold text-[10px]">
+                                            <span v-else class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">
                                                 <i class="fa-solid fa-eye"></i> ปกติ
                                             </span>
                                         </td>
 
-                                        <td class="p-2 text-center">
+                                        <td class="p-2.5 text-center min-w-[80px]">
                                             <div class="flex justify-center gap-1">
-                                                <button @click="toggleHideRow(st)" class="p-1.5 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 transition" :title="getSurveyData(st).hidden ? 'คลายซ่อน Row' : 'ซ่อน Row'">
+                                                <button @click="toggleHideRow(st)" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" :title="getSurveyData(st).hidden ? 'แสดง Row' : 'ซ่อน Row'">
                                                     <i :class="getSurveyData(st).hidden ? 'fa-solid fa-eye text-emerald-600' : 'fa-solid fa-eye-slash text-amber-600'"></i>
                                                 </button>
-                                                <button @click="deleteRow(st)" class="p-1.5 rounded bg-rose-100 hover:bg-rose-200 text-rose-600 transition" title="ลบ Row">
+                                                <button @click="deleteRow(st)" class="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 transition" title="ลบ Row">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </div>
@@ -636,24 +668,24 @@
 
                 <!-- 3.4 QR CODE CHECK-IN GENERATOR FOR ADMIN -->
                 <div v-else-if="adminView === 'qrcode' && adminRole === 'full'" class="max-w-xl mx-auto space-y-6">
-                    <div class="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-purple-100 text-center space-y-6">
+                    <div class="modern-glass-card p-8 rounded-3xl text-center space-y-6">
                         <div>
-                            <h2 class="text-xl font-bold text-gray-800 flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-qrcode text-purple-600"></i> QR Code จุดเช็คอินรับวัคซีน
+                            <h2 class="text-xl font-bold text-slate-900 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-qrcode text-brand-600"></i> QR Code จุดเช็คอินรับวัคซีน
                             </h2>
-                            <p class="text-xs text-gray-500 mt-1">แสดง QR Code นี้บริเวณจุดบริการฉีดวัคซีน เพื่อให้นักศึกษาสแกนหรือแอดมินใช้เช็คอิน</p>
+                            <p class="text-xs text-slate-500 mt-1">แสดง QR Code นี้บริเวณจุดบริการฉีดวัคซีน เพื่อให้นักศึกษาสแกนหรือแอดมินใช้เช็คอิน</p>
                         </div>
 
-                        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-inner inline-block mx-auto">
-                            <img :src="qrCodeApiUrl" alt="Check-in QR Code" class="w-60 h-60 mx-auto rounded-lg">
+                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-inner inline-block mx-auto">
+                            <img :src="qrCodeApiUrl" alt="Check-in QR Code" class="w-60 h-60 mx-auto rounded-xl">
                         </div>
 
                         <div class="space-y-3">
-                            <p class="text-xs text-gray-600 font-mono bg-purple-50 p-3 rounded-xl border border-purple-100 break-all">
+                            <p class="text-xs text-slate-600 font-mono bg-slate-50 p-3.5 rounded-2xl border border-slate-200 break-all">
                                 {{ checkinPageUrl }}
                             </p>
                             <div class="flex justify-center gap-2">
-                                <button @click="openCheckinKioskDirectly" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl text-xs shadow-md hover:opacity-95 transition">
+                                <button @click="openCheckinKioskDirectly" class="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-2xl text-xs shadow-lg shadow-amber-500/25 hover:opacity-95 transition active:scale-95">
                                     <i class="fa-solid fa-up-right-from-square mr-1"></i> เปิดหน้าจอจุดเช็คอิน
                                 </button>
                             </div>
@@ -666,24 +698,24 @@
         </main>
 
         <!-- Admin Login Modal -->
-        <div v-if="showAdminModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-purple-100 space-y-4">
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mx-auto text-xl mb-2">
+        <div v-if="showAdminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-7 max-w-sm w-full shadow-2xl border border-slate-100 space-y-5">
+                <div class="text-center space-y-2">
+                    <div class="w-14 h-14 bg-brand-50 text-brand-600 rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-inner">
                         <i class="fa-solid fa-shield-cat"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-800">ผู้ดูแลระบบ (Admin Login)</h3>
-                    <p class="text-xs text-gray-500">กรอกรหัสผ่าน Admin เพื่อเข้าใช้งาน</p>
+                    <h3 class="text-xl font-bold text-slate-900">ผู้ดูแลระบบ (Admin)</h3>
+                    <p class="text-xs text-slate-500">กรอกรหัสผ่านเพื่อเข้าสู่ระบบควบคุม</p>
                 </div>
 
                 <div>
-                    <input v-model="adminPassword" type="password" placeholder="รหัสผ่าน Admin" @keyup.enter="loginAdmin" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 text-sm text-center font-mono font-bold">
-                    <p v-if="adminLoginError" class="text-xs text-rose-500 mt-2 text-center"><i class="fa-solid fa-triangle-exclamation"></i> {{ adminLoginError }}</p>
+                    <input v-model="adminPassword" type="password" placeholder="รหัสผ่าน Admin" @keyup.enter="loginAdmin" class="w-full p-3.5 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-brand-500 text-sm text-center font-mono font-bold bg-slate-50">
+                    <p v-if="adminLoginError" class="text-xs text-rose-500 mt-2 text-center font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> {{ adminLoginError }}</p>
                 </div>
 
                 <div class="flex gap-2">
-                    <button @click="showAdminModal = false" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-semibold">ยกเลิก</button>
-                    <button @click="loginAdmin" class="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm">เข้าสู่ระบบ</button>
+                    <button @click="showAdminModal = false" class="flex-1 py-3 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold">ยกเลิก</button>
+                    <button @click="loginAdmin" class="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/25">เข้าสู่ระบบ</button>
                 </div>
             </div>
         </div>
@@ -857,12 +889,10 @@
                     });
                 },
 
-                // Handle Bulk Paste from Excel / Google Sheets
                 handlePaste(e, startRowIdx, startColKey) {
                     const clipboardData = e.clipboardData || window.clipboardData;
                     const pastedText = clipboardData.getData('text');
                     
-                    // If simple single-cell text without tab/newline, handle standard paste
                     if (!pastedText || (!pastedText.includes('\t') && !pastedText.includes('\n'))) {
                         return;
                     }
@@ -878,7 +908,6 @@
                     rows.forEach((rowText, rOffset) => {
                         const targetRowIdx = startRowIdx + rOffset;
                         
-                        // Auto append blank row if pasted rows exceed current list length
                         while (targetRowIdx >= this.filteredStudents.length) {
                             this.addNewRowAtEnd();
                         }
@@ -1049,24 +1078,6 @@
                 exitCheckinMode() {
                     this.currentUserType = 'admin';
                     this.adminView = 'qrcode';
-                },
-
-                loginStudent() {
-                    this.loginError = '';
-                    const username = this.loginInput.username.trim();
-                    if (!username) {
-                        this.loginError = 'กรุณากรอกรหัสนักศึกษา';
-                        return;
-                    }
-                    
-                    const found = this.students.find(s => String(s.id).trim() === username);
-                    if (found) {
-                        this.loggedInStudent = found;
-                        this.currentUserType = 'student';
-                        this.isEditing = false;
-                    } else {
-                        this.loginError = 'ไม่พบรหัสนักศึกษานี้ในฐานข้อมูลของคณะฯ';
-                    }
                 },
 
                 confirmVaccine(choice, dose) {
