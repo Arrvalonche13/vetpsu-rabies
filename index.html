@@ -72,7 +72,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h1 class="font-bold text-slate-900 text-base md:text-lg leading-tight tracking-tight">ระบบสำรวจวัคซีนพิษสุนัขบ้า</h1>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 text-brand-700 border border-brand-200">v2.0</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 text-brand-700 border border-brand-200">v2.4</span>
                         </div>
                         <p class="text-xs text-slate-500 font-medium">คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์</p>
                     </div>
@@ -147,8 +147,8 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <span class="text-slate-400 font-medium"><i class="fa-solid fa-calendar-days mr-1 text-brand-400"></i> ปีสำรวจ:</span>
-                        <select v-model="activeYear" class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <span class="text-slate-400 font-medium"><i class="fa-solid fa-calendar-days mr-1 text-brand-400"></i> เลือกปีสำรวจ:</span>
+                        <select v-model="activeYear" @change="saveToStorage" class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                             <option v-for="y in availableYears" :key="y" :value="y">พ.ศ. {{ y }}</option>
                         </select>
                     </div>
@@ -188,23 +188,49 @@
                 </div>
             </div>
 
-            <!-- 1. LANDING PAGE / GOOGLE WORKSPACE AUTH ONLY -->
+            <!-- 1. LANDING PAGE / GOOGLE WORKSPACE & STUDENT ID + HN LOGIN -->
             <div v-else-if="currentUserType === 'guest'" class="max-w-md mx-auto my-12">
-                <div class="modern-glass-card p-8 rounded-3xl text-center space-y-7 relative overflow-hidden">
+                <div class="modern-glass-card p-8 rounded-3xl text-center space-y-6 relative overflow-hidden">
                     <div class="w-16 h-16 bg-gradient-to-tr from-brand-600 to-pink-500 text-white rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-xl shadow-brand-500/20 ring-4 ring-purple-50">
                         <i class="fa-solid fa-graduation-cap"></i>
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-slate-900 tracking-tight">เข้าสู่ระบบนักศึกษา</h2>
-                        <p class="text-xs text-slate-500 mt-1">ใช้อีเมล ม.อ. (Google Workspace) เพื่อยืนยันตัวตน</p>
+                        <p class="text-xs text-slate-500 mt-1">ยืนยันตัวตนด้วย Google หรือ รหัสนักศึกษา + เลข HN</p>
                     </div>
 
-                    <!-- Google Workspace Button Container & Error Alert -->
-                    <div class="space-y-4 py-2">
-                        <div id="googleBtnContainer" class="flex justify-center min-h-[44px]"></div>
-                        <p class="text-[11px] text-slate-400 font-medium"><i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i> ปลอดภัย รองรับบัญชี @g.psu.ac.th และ @psu.ac.th</p>
-                        <p v-if="loginError" class="text-xs text-rose-500 font-medium bg-rose-50 p-3 rounded-xl border border-rose-100 text-left"><i class="fa-solid fa-circle-exclamation mr-1"></i> {{ loginError }}</p>
+                    <!-- Option 1: Google Workspace Button -->
+                    <div class="space-y-3 py-1 flex flex-col items-center">
+                        <div id="googleBtnContainer" class="flex justify-center min-h-[44px] w-full"></div>
                     </div>
+
+                    <!-- Divider -->
+                    <div class="relative flex py-1 items-center">
+                        <div class="flex-grow border-t border-slate-200"></div>
+                        <span class="flex-shrink mx-4 text-xs font-semibold text-slate-400">หรือล็อกอินด้วยข้อมูลสถาบัน</span>
+                        <div class="flex-grow border-t border-slate-200"></div>
+                    </div>
+
+                    <!-- Option 2: Student ID + HN Login Form -->
+                    <div class="space-y-3.5 text-left">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">1. รหัสนักศึกษา (10 หลัก)</label>
+                            <input v-model="studentLoginInput.id" type="text" placeholder="เช่น 6811710xxx" class="w-full p-3 rounded-2xl border border-slate-200 text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">
+                                2. เลข HN โรงพยาบาลสงขลานครินทร์
+                            </label>
+                            <input v-model="studentLoginInput.hn" type="text" placeholder="เช่น 153-91-76 (ชั้นปี 1 ที่ยังไม่มี HN สามารถเว้นว่างได้)" @keyup.enter="loginWithStudentIdAndHn" class="w-full p-3 rounded-2xl border border-slate-200 text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <p class="text-[11px] text-amber-700 mt-1 font-medium"><i class="fa-solid fa-lightbulb mr-1"></i> นักศึกษาชั้นปีที่ 1 หากยังไม่เคยระบุ HN สามารถเว้นว่างได้</p>
+                        </div>
+                        <button @click="loginWithStudentIdAndHn" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-2xl transition shadow-md shadow-brand-500/20 text-xs active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ
+                        </button>
+                    </div>
+
+                    <!-- Error Alert -->
+                    <p v-if="loginError" class="text-xs text-rose-500 font-medium bg-rose-50 p-3 rounded-xl border border-rose-100 text-left"><i class="fa-solid fa-circle-exclamation mr-1"></i> {{ loginError }}</p>
                 </div>
             </div>
 
@@ -235,11 +261,10 @@
                         </div>
 
                         <div class="flex items-center gap-2.5">
-                            <div class="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-                                <span class="text-xs font-semibold text-slate-600">ปีสำรวจ:</span>
-                                <select v-model="activeYear" class="bg-white border border-slate-200 rounded-lg text-xs font-bold px-2 py-1 text-brand-700 focus:outline-none">
-                                    <option v-for="y in availableYears" :key="y" :value="y">พ.ศ. {{ y }}</option>
-                                </select>
+                            <!-- Display Active Survey Year Only (Read-only for Student) -->
+                            <div class="flex items-center gap-1.5 bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200">
+                                <span class="text-xs font-semibold text-slate-600"><i class="fa-solid fa-calendar-days text-brand-500 mr-1"></i> ปีสำรวจ:</span>
+                                <span class="text-xs font-bold text-brand-700">พ.ศ. {{ activeYear }}</span>
                             </div>
 
                             <button @click="isEditing = !isEditing" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm" :class="isEditing ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
@@ -303,10 +328,24 @@
                             </div>
                         </div>
 
-                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                        <!-- 7. Last Vaccine Date with Note -->
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100 md:col-span-2">
                             <label class="block text-xs font-bold text-slate-500 mb-1">7. รับวัคซีนเข็มล่าสุดเมื่อวันที่ <span class="text-rose-500">*</span></label>
-                            <input v-if="isEditing" v-model="loggedInStudent.lastVaccineDate" @change="saveToStorage" type="text" placeholder="เช่น 9-เม.ย.-68 หรือ -" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium">
-                            <div v-else class="font-bold text-brand-700">{{ loggedInStudent.lastVaccineDate || 'ยังไม่ได้ระบุ' }}</div>
+                            <input v-if="isEditing" v-model="loggedInStudent.lastVaccineDate" @change="saveToStorage" type="text" placeholder="เช่น 9-เม.ย.-68" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-brand-500">
+                            <div v-else class="font-bold text-brand-700 text-base mb-1">{{ loggedInStudent.lastVaccineDate || 'ยังไม่ได้ระบุ' }}</div>
+                            
+                            <!-- Note Box -->
+                            <div class="mt-2 text-xs text-slate-600 bg-amber-50/90 p-3 rounded-xl border border-amber-200/80 leading-relaxed">
+                                <p class="font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-info text-amber-600"></i> หมายเหตุรูปแบบการกรอกวันที่:
+                                </p>
+                                <ul class="list-disc list-inside space-y-1 text-[11px] text-slate-700 pl-1">
+                                    <li><b>รูปแบบการกรอก:</b> <code class="font-mono font-bold text-brand-700 bg-white px-1.5 py-0.5 rounded border border-slate-200">วัน-เดือนแบบย่อ-เลขปีพ.ศ.2ตัวท้าย</code> (เช่น 9-เม.ย.-68)</li>
+                                    <li>หากจำ<b>วันที่</b>ไม่ได้ ให้ระบุเป็นวันที่ <b>1</b></li>
+                                    <li>กรณีจำ<b>เดือน</b>ไม่ได้ ให้ใส่เดือน <b>มกราคม (ม.ค.)</b></li>
+                                    <li>กรณีจำ<b>ปี</b>ไม่ได้ ให้ใส่ <b>67</b> <span class="text-rose-600 font-semibold">(กรณีเกินเวลา 1 ปี ขึ้นไป ต้องเลือกสร้างภูมิใหม่ 3 เข็ม) เท่านั้น</span></li>
+                                </ul>
+                            </div>
                         </div>
 
                         <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
@@ -341,7 +380,7 @@
                             <div v-else class="font-semibold text-slate-800">{{ loggedInStudent.chronicDisease || 'ไม่มี' }}</div>
                         </div>
 
-                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                        <div class="bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100 md:col-span-2">
                             <label class="block text-xs font-bold text-slate-500 mb-1">12. เบอร์โทรศัพท์ <span class="text-rose-500">*</span></label>
                             <input v-if="isEditing" v-model="loggedInStudent.phone" @change="saveToStorage" type="text" placeholder="เช่น 0812345678" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-mono">
                             <div v-else class="font-mono font-semibold text-slate-800">{{ loggedInStudent.phone || 'ยังไม่ได้ระบุ' }}</div>
@@ -738,7 +777,7 @@
                     adminRole: null,
                     adminView: 'dashboard',
 
-                    loginInput: { username: '', password: '' },
+                    studentLoginInput: { id: '', hn: '' },
                     loginError: '',
                     showAdminModal: false,
                     adminPassword: '',
@@ -746,7 +785,7 @@
 
                     isEditing: false,
 
-                    activeYear: '2568',
+                    activeYear: '2569',
                     availableYears: ['2568', '2569'],
                     newYearInput: '',
                     controlsByYear: {
@@ -764,6 +803,11 @@
                     checkinSuccess: false,
 
                     students: []
+                }
+            },
+            watch: {
+                activeYear(newVal) {
+                    this.saveToLocalStorageOnly();
                 }
             },
             computed: {
@@ -982,6 +1026,50 @@
                     }
                 },
 
+                loginWithStudentIdAndHn() {
+                    this.loginError = '';
+                    const sid = this.studentLoginInput.id.trim();
+                    const hn = this.studentLoginInput.hn.trim();
+
+                    if (!sid) {
+                        this.loginError = 'กรุณากรอกรหัสนักศึกษา';
+                        return;
+                    }
+
+                    const found = this.students.find(s => String(s.id).trim() === sid);
+
+                    if (!found) {
+                        this.loginError = 'ไม่พบรหัสนักศึกษานี้ในระบบ';
+                        return;
+                    }
+
+                    // Check if student is Year 1 AND has not specified HN yet in DB
+                    const isYear1WithoutHn = (Number(found.year) === 1) && (!found.hn || found.hn.trim() === '' || found.hn.trim() === '-');
+
+                    if (isYear1WithoutHn) {
+                        // Exception: Allow Year 1 to login with Student ID only
+                        this.loggedInStudent = found;
+                        this.currentUserType = 'student';
+                        this.loginError = '';
+                        this.studentLoginInput = { id: '', hn: '' };
+                    } else {
+                        // Standard check: Requires matching HN
+                        if (!hn) {
+                            this.loginError = 'กรุณากรอกเลข HN เพื่อเข้าสู่ระบบ';
+                            return;
+                        }
+
+                        if (String(found.hn || '').trim() === hn) {
+                            this.loggedInStudent = found;
+                            this.currentUserType = 'student';
+                            this.loginError = '';
+                            this.studentLoginInput = { id: '', hn: '' };
+                        } else {
+                            this.loginError = 'เลข HN ไม่ถูกต้อง';
+                        }
+                    }
+                },
+
                 async fetchFromGoogleSheet() {
                     this.isLoading = true;
                     try {
@@ -1006,7 +1094,12 @@
                             method: 'POST',
                             mode: 'no-cors',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ students: this.students })
+                            body: JSON.stringify({ 
+                                students: this.students,
+                                activeYear: this.activeYear,
+                                availableYears: this.availableYears,
+                                controlsByYear: this.controlsByYear
+                            })
                         });
                     } catch (err) {
                         console.error('Error saving to Google Sheets:', err);
@@ -1017,6 +1110,8 @@
                     try {
                         localStorage.setItem('psu_vet_students_db', JSON.stringify(this.students));
                         localStorage.setItem('psu_vet_controls_db', JSON.stringify(this.controlsByYear));
+                        localStorage.setItem('psu_vet_active_year', this.activeYear);
+                        localStorage.setItem('psu_vet_available_years', JSON.stringify(this.availableYears));
                     } catch(e) {}
                 },
 
@@ -1029,6 +1124,12 @@
 
                         const savedCtrl = localStorage.getItem('psu_vet_controls_db');
                         if (savedCtrl) this.controlsByYear = JSON.parse(savedCtrl);
+
+                        const savedActiveYr = localStorage.getItem('psu_vet_active_year');
+                        if (savedActiveYr) this.activeYear = savedActiveYr;
+
+                        const savedAvailYrs = localStorage.getItem('psu_vet_available_years');
+                        if (savedAvailYrs) this.availableYears = JSON.parse(savedAvailYrs);
                     } catch(e) {}
                 },
 
@@ -1177,7 +1278,7 @@
                     this.currentUserType = 'guest';
                     this.loggedInStudent = null;
                     this.adminRole = null;
-                    this.loginInput = { username: '', password: '' };
+                    this.studentLoginInput = { id: '', hn: '' };
                     this.$nextTick(() => {
                         this.initGoogleSignIn();
                     });
