@@ -72,7 +72,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h1 class="font-bold text-slate-900 text-base md:text-lg leading-tight tracking-tight">ระบบสำรวจวัคซีนพิษสุนัขบ้า</h1>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 text-brand-700 border border-brand-200">v2.4</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 text-brand-700 border border-brand-200">v2.5</span>
                         </div>
                         <p class="text-xs text-slate-500 font-medium">คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์</p>
                     </div>
@@ -457,35 +457,47 @@
                         </div>
                     </div>
 
-                    <!-- KPI Cards Grid -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="modern-glass-card p-5 rounded-3xl space-y-2 border-slate-200/80">
-                            <div class="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-base font-bold">
+                    <!-- KPI Cards Grid (5 Cards layout) -->
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+                        <div class="modern-glass-card p-4 rounded-3xl space-y-1.5 border-slate-200/80">
+                            <div class="w-8 h-8 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold">
                                 <i class="fa-solid fa-users"></i>
                             </div>
                             <p class="text-xs font-semibold text-slate-500">นักศึกษาทั้งหมด</p>
-                            <h3 class="text-2xl font-bold text-slate-900">{{ overallDashboardStats.totalStudents }} <span class="text-xs font-normal text-slate-500">คน</span></h3>
+                            <h3 class="text-xl font-bold text-slate-900">{{ overallDashboardStats.totalStudents }} <span class="text-xs font-normal text-slate-500">คน</span></h3>
                         </div>
-                        <div class="modern-glass-card p-5 rounded-3xl space-y-2 border-emerald-100">
-                            <div class="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base font-bold">
+
+                        <div class="modern-glass-card p-4 rounded-3xl space-y-1.5 border-emerald-100">
+                            <div class="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
                                 <i class="fa-solid fa-user-check"></i>
                             </div>
                             <p class="text-xs font-semibold text-emerald-600">ประสงค์ฉีดวัคซีน</p>
-                            <h3 class="text-2xl font-bold text-emerald-700">{{ overallDashboardStats.totalVaccineUsers }} <span class="text-xs font-normal text-emerald-600">คน ({{ overallDashboardStats.percentVaccinated }}%)</span></h3>
+                            <h3 class="text-xl font-bold text-emerald-700">{{ overallDashboardStats.totalVaccineUsers }} <span class="text-xs font-normal text-emerald-600">คน ({{ overallDashboardStats.percentVaccinated }}%)</span></h3>
                         </div>
-                        <div class="modern-glass-card p-5 rounded-3xl space-y-2 border-purple-100">
-                            <div class="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-base font-bold">
+
+                        <!-- NEW: KPI Card สำหรับผู้ไม่ประสงค์ฉีด -->
+                        <div class="modern-glass-card p-4 rounded-3xl space-y-1.5 border-rose-100">
+                            <div class="w-8 h-8 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-user-xmark"></i>
+                            </div>
+                            <p class="text-xs font-semibold text-rose-600">ไม่ประสงค์ฉีด</p>
+                            <h3 class="text-xl font-bold text-rose-700">{{ overallDashboardStats.totalNoVaxUsers }} <span class="text-xs font-normal text-rose-600">คน ({{ overallDashboardStats.percentNoVax }}%)</span></h3>
+                        </div>
+
+                        <div class="modern-glass-card p-4 rounded-3xl space-y-1.5 border-purple-100">
+                            <div class="w-8 h-8 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm font-bold">
                                 <i class="fa-solid fa-syringe"></i>
                             </div>
                             <p class="text-xs font-semibold text-purple-600">ฉีดกระตุ้น 1 เข็ม</p>
-                            <h3 class="text-2xl font-bold text-purple-700">{{ overallDashboardStats.total1Dose }} <span class="text-xs font-normal text-purple-600">คน</span></h3>
+                            <h3 class="text-xl font-bold text-purple-700">{{ overallDashboardStats.total1Dose }} <span class="text-xs font-normal text-purple-600">คน</span></h3>
                         </div>
-                        <div class="modern-glass-card p-5 rounded-3xl space-y-2 border-pink-100">
-                            <div class="w-9 h-9 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-base font-bold">
+
+                        <div class="modern-glass-card p-4 rounded-3xl space-y-1.5 border-pink-100">
+                            <div class="w-8 h-8 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-sm font-bold">
                                 <i class="fa-solid fa-vial"></i>
                             </div>
                             <p class="text-xs font-semibold text-pink-600">ฉีดสร้างภูมิ 3 เข็ม</p>
-                            <h3 class="text-2xl font-bold text-pink-700">{{ overallDashboardStats.total3Dose }} <span class="text-xs font-normal text-pink-600">คน</span></h3>
+                            <h3 class="text-xl font-bold text-pink-700">{{ overallDashboardStats.total3Dose }} <span class="text-xs font-normal text-pink-600">คน</span></h3>
                         </div>
                     </div>
 
@@ -501,6 +513,7 @@
                                         <th class="p-3.5">ชั้นปี</th>
                                         <th class="p-3.5 text-center">นักศึกษาทั้งชั้นปี (คน)</th>
                                         <th class="p-3.5 text-center">ประสงค์เข้าฉีด (คน)</th>
+                                        <th class="p-3.5 text-center text-rose-600">ไม่ประสงค์ฉีด (คน)</th>
                                         <th class="p-3.5 text-center">สัดส่วนฉีด (%)</th>
                                         <th class="p-3.5 text-center">ฉีด 1 เข็ม (คน)</th>
                                         <th class="p-3.5 text-center">ฉีด 3 เข็ม (คน)</th>
@@ -512,6 +525,7 @@
                                         <td class="p-3.5 font-bold text-slate-900">ชั้นปีที่ {{ s.year }}</td>
                                         <td class="p-3.5 text-center font-mono font-medium text-slate-700">{{ s.totalStudents }}</td>
                                         <td class="p-3.5 text-center font-mono font-bold text-emerald-600">{{ s.vaxCount }}</td>
+                                        <td class="p-3.5 text-center font-mono font-bold text-rose-600">{{ s.noVaxCount }}</td>
                                         <td class="p-3.5 text-center font-mono">
                                             <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-100">{{ s.percent }}%</span>
                                         </td>
@@ -525,6 +539,7 @@
                                         <td class="p-3.5 text-slate-900">รวมทั้งสิ้น</td>
                                         <td class="p-3.5 text-center font-mono text-slate-900">{{ overallDashboardStats.totalStudents }}</td>
                                         <td class="p-3.5 text-center font-mono text-emerald-700">{{ overallDashboardStats.totalVaccineUsers }}</td>
+                                        <td class="p-3.5 text-center font-mono text-rose-700">{{ overallDashboardStats.totalNoVaxUsers }}</td>
                                         <td class="p-3.5 text-center font-mono text-emerald-700">{{ overallDashboardStats.percentVaccinated }}%</td>
                                         <td class="p-3.5 text-center font-mono text-purple-700">{{ overallDashboardStats.total1Dose }}</td>
                                         <td class="p-3.5 text-center font-mono text-pink-700">{{ overallDashboardStats.total3Dose }}</td>
@@ -876,7 +891,10 @@
                         const totalStudents = yrStudents.length;
                         
                         const vaxUsers = yrStudents.filter(s => this.getSurveyData(s).vaccineChoice === true);
+                        const noVaxUsers = yrStudents.filter(s => this.getSurveyData(s).vaccineChoice === false);
+
                         const vaxCount = vaxUsers.length;
+                        const noVaxCount = noVaxUsers.length;
                         const percent = totalStudents > 0 ? ((vaxCount / totalStudents) * 100).toFixed(1) : 0;
                         
                         const count1Dose = vaxUsers.filter(s => this.getSurveyData(s).doseType === '1 เข็ม').length;
@@ -887,6 +905,7 @@
                             year: yr,
                             totalStudents,
                             vaxCount,
+                            noVaxCount,
                             percent,
                             count1Dose,
                             count3Dose,
@@ -899,18 +918,23 @@
                     const stats = this.yearDashboardStats;
                     const totalStudents = stats.reduce((acc, curr) => acc + curr.totalStudents, 0);
                     const totalVaccineUsers = stats.reduce((acc, curr) => acc + curr.vaxCount, 0);
+                    const totalNoVaxUsers = stats.reduce((acc, curr) => acc + curr.noVaxCount, 0);
                     const total1Dose = stats.reduce((acc, curr) => acc + curr.count1Dose, 0);
                     const total3Dose = stats.reduce((acc, curr) => acc + curr.count3Dose, 0);
                     const totalVaccines = stats.reduce((acc, curr) => acc + curr.vaccinesNeeded, 0);
+                    
                     const percentVaccinated = totalStudents > 0 ? ((totalVaccineUsers / totalStudents) * 100).toFixed(1) : 0;
+                    const percentNoVax = totalStudents > 0 ? ((totalNoVaxUsers / totalStudents) * 100).toFixed(1) : 0;
 
                     return {
                         totalStudents,
                         totalVaccineUsers,
+                        totalNoVaxUsers,
                         total1Dose,
                         total3Dose,
                         totalVaccines,
-                        percentVaccinated
+                        percentVaccinated,
+                        percentNoVax
                     };
                 }
             },
@@ -1043,17 +1067,14 @@
                         return;
                     }
 
-                    // Check if student is Year 1 AND has not specified HN yet in DB
                     const isYear1WithoutHn = (Number(found.year) === 1) && (!found.hn || found.hn.trim() === '' || found.hn.trim() === '-');
 
                     if (isYear1WithoutHn) {
-                        // Exception: Allow Year 1 to login with Student ID only
                         this.loggedInStudent = found;
                         this.currentUserType = 'student';
                         this.loginError = '';
                         this.studentLoginInput = { id: '', hn: '' };
                     } else {
-                        // Standard check: Requires matching HN
                         if (!hn) {
                             this.loginError = 'กรุณากรอกเลข HN เพื่อเข้าสู่ระบบ';
                             return;
@@ -1093,7 +1114,7 @@
                         await fetch(GOOGLE_SCRIPT_URL, {
                             method: 'POST',
                             mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                             body: JSON.stringify({ 
                                 students: this.students,
                                 activeYear: this.activeYear,
